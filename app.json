@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "FluentAI",
+    "slug": "fluent-ai-tutor",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.fluentai.tutor",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "This app needs access to your microphone for real-time conversation practice.",
+        "NSCameraUsageDescription": "This app needs access to your camera for pronunciation feedback and immersive learning."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.fluentai.tutor",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow FluentAI to access your microphone for conversation practice."
+        }
+      ]
+    ],
+    "scheme": "fluentai"
+  }
+}
