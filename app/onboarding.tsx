@@ -1,37 +1,64 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  TextInput
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { useUserStore } from '../src/stores/useUserStore';
-import { LanguageCode, ProficiencyLevel, UserProfile, ProgressData } from '../src/types';
+  TextInput,
+} from "react-native";
+import { useRouter } from "expo-router";
+import { useUserStore } from "../src/stores/useUserStore";
+import {
+  LanguageCode,
+  ProficiencyLevel,
+  UserProfile,
+  ProgressData,
+} from "../src/types";
 
 const LANGUAGES: { code: LanguageCode; name: string; flag: string }[] = [
-  { code: 'es', name: 'Spanish', flag: '🇪🇸' },
-  { code: 'fr', name: 'French', flag: '🇫🇷' },
-  { code: 'de', name: 'German', flag: '🇩🇪' },
-  { code: 'it', name: 'Italian', flag: '🇮🇹' },
-  { code: 'pt', name: 'Portuguese', flag: '🇵🇹' },
-  { code: 'ja', name: 'Japanese', flag: '🇯🇵' },
-  { code: 'ko', name: 'Korean', flag: '🇰🇷' },
-  { code: 'zh', name: 'Chinese', flag: '🇨🇳' }
+  { code: "en", name: "English", flag: "🇺🇸" },
+  { code: "es", name: "Spanish", flag: "🇪🇸" },
+  { code: "fr", name: "French", flag: "🇫🇷" },
+  { code: "de", name: "German", flag: "🇩🇪" },
+  { code: "it", name: "Italian", flag: "🇮🇹" },
+  { code: "pt", name: "Portuguese", flag: "🇵🇹" },
+  { code: "ja", name: "Japanese", flag: "🇯🇵" },
+  { code: "ko", name: "Korean", flag: "🇰🇷" },
+  { code: "zh", name: "Chinese", flag: "🇨🇳" },
 ];
 
-const LEVELS: { level: ProficiencyLevel; name: string; description: string }[] = [
-  { level: 'beginner', name: 'Beginner', description: 'Just starting out' },
-  { level: 'elementary', name: 'Elementary', description: 'Know basic phrases' },
-  { level: 'intermediate', name: 'Intermediate', description: 'Can have simple conversations' },
-  { level: 'advanced', name: 'Advanced', description: 'Fluent in most situations' }
-];
+const LEVELS: { level: ProficiencyLevel; name: string; description: string }[] =
+  [
+    { level: "beginner", name: "Beginner", description: "Just starting out" },
+    {
+      level: "elementary",
+      name: "Elementary",
+      description: "Know basic phrases",
+    },
+    {
+      level: "intermediate",
+      name: "Intermediate",
+      description: "Can have simple conversations",
+    },
+    {
+      level: "advanced",
+      name: "Advanced",
+      description: "Fluent in most situations",
+    },
+  ];
 
 const INTERESTS = [
-  'Travel', 'Business', 'Food', 'Technology', 'Sports',
-  'Movies', 'Music', 'Art', 'Science', 'Gaming'
+  "Travel",
+  "Business",
+  "Food",
+  "Technology",
+  "Sports",
+  "Movies",
+  "Music",
+  "Art",
+  "Science",
+  "Gaming",
 ];
 
 export default function OnboardingScreen() {
@@ -39,9 +66,10 @@ export default function OnboardingScreen() {
   const setProfile = useUserStore((state) => state.setProfile);
 
   const [step, setStep] = useState(1);
-  const [name, setName] = useState('');
-  const [targetLanguage, setTargetLanguage] = useState<LanguageCode>('es');
-  const [proficiencyLevel, setProficiencyLevel] = useState<ProficiencyLevel>('beginner');
+  const [name, setName] = useState("");
+  const [targetLanguage, setTargetLanguage] = useState<LanguageCode>("es");
+  const [proficiencyLevel, setProficiencyLevel] =
+    useState<ProficiencyLevel>("beginner");
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
 
   const toggleInterest = (interest: string) => {
@@ -57,11 +85,11 @@ export default function OnboardingScreen() {
       id: Date.now().toString(),
       name,
       targetLanguage,
-      nativeLanguage: 'en', // Default to English
+      nativeLanguage: "en", // Default to English
       proficiencyLevel,
       interests: selectedInterests,
       createdAt: new Date(),
-      totalPracticeTime: 0
+      totalPracticeTime: 0,
     };
 
     const progress: ProgressData = {
@@ -73,13 +101,13 @@ export default function OnboardingScreen() {
       weakAreas: [],
       strongAreas: [],
       vocabularyMastered: 0,
-      scenariosCompleted: []
+      scenariosCompleted: [],
     };
 
     await setProfile(profile);
     await useUserStore.getState().updateProgress(progress);
 
-    router.replace('/home');
+    router.replace("/home");
   };
 
   return (
@@ -115,7 +143,9 @@ export default function OnboardingScreen() {
         {/* Step 2: Language Selection */}
         {step === 2 && (
           <View style={styles.stepContainer}>
-            <Text style={styles.title}>What language do you want to master?</Text>
+            <Text style={styles.title}>
+              What language do you want to master?
+            </Text>
 
             <View style={styles.languageGrid}>
               {LANGUAGES.map((lang) => (
@@ -123,7 +153,7 @@ export default function OnboardingScreen() {
                   key={lang.code}
                   style={[
                     styles.languageCard,
-                    targetLanguage === lang.code && styles.languageCardSelected
+                    targetLanguage === lang.code && styles.languageCardSelected,
                   ]}
                   onPress={() => setTargetLanguage(lang.code)}
                 >
@@ -156,7 +186,7 @@ export default function OnboardingScreen() {
                 key={level.level}
                 style={[
                   styles.levelCard,
-                  proficiencyLevel === level.level && styles.levelCardSelected
+                  proficiencyLevel === level.level && styles.levelCardSelected,
                 ]}
                 onPress={() => setProficiencyLevel(level.level)}
               >
@@ -192,14 +222,16 @@ export default function OnboardingScreen() {
                   key={interest}
                   style={[
                     styles.interestChip,
-                    selectedInterests.includes(interest) && styles.interestChipSelected
+                    selectedInterests.includes(interest) &&
+                      styles.interestChipSelected,
                   ]}
                   onPress={() => toggleInterest(interest)}
                 >
                   <Text
                     style={[
                       styles.interestText,
-                      selectedInterests.includes(interest) && styles.interestTextSelected
+                      selectedInterests.includes(interest) &&
+                        styles.interestTextSelected,
                     ]}
                   >
                     {interest}
@@ -209,7 +241,10 @@ export default function OnboardingScreen() {
             </View>
 
             <TouchableOpacity
-              style={[styles.button, selectedInterests.length === 0 && styles.buttonDisabled]}
+              style={[
+                styles.button,
+                selectedInterests.length === 0 && styles.buttonDisabled,
+              ]}
               onPress={handleComplete}
               disabled={selectedInterests.length === 0}
             >
@@ -232,134 +267,134 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff'
+    backgroundColor: "#fff",
   },
   content: {
     flex: 1,
     padding: 24,
-    paddingTop: 60
+    paddingTop: 60,
   },
   stepContainer: {
-    flex: 1
+    flex: 1,
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 8,
-    color: '#000'
+    color: "#000",
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
-    marginBottom: 32
+    color: "#666",
+    marginBottom: 32,
   },
   label: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 12,
-    color: '#000'
+    color: "#000",
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    marginBottom: 24
+    marginBottom: 24,
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center',
-    marginTop: 16
+    alignItems: "center",
+    marginTop: 16,
   },
   buttonDisabled: {
-    backgroundColor: '#ccc'
+    backgroundColor: "#ccc",
   },
   buttonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: '600'
+    fontWeight: "600",
   },
   backButton: {
     padding: 16,
-    alignItems: 'center'
+    alignItems: "center",
   },
   backButtonText: {
-    color: '#007AFF',
-    fontSize: 16
+    color: "#007AFF",
+    fontSize: 16,
   },
   languageGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
-    marginBottom: 24
+    marginBottom: 24,
   },
   languageCard: {
-    width: '47%',
+    width: "47%",
     padding: 20,
     borderWidth: 2,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
     borderRadius: 12,
-    alignItems: 'center'
+    alignItems: "center",
   },
   languageCardSelected: {
-    borderColor: '#007AFF',
-    backgroundColor: '#f0f8ff'
+    borderColor: "#007AFF",
+    backgroundColor: "#f0f8ff",
   },
   languageFlag: {
     fontSize: 48,
-    marginBottom: 8
+    marginBottom: 8,
   },
   languageName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#000'
+    fontWeight: "600",
+    color: "#000",
   },
   levelCard: {
     padding: 20,
     borderWidth: 2,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
     borderRadius: 12,
-    marginBottom: 12
+    marginBottom: 12,
   },
   levelCardSelected: {
-    borderColor: '#007AFF',
-    backgroundColor: '#f0f8ff'
+    borderColor: "#007AFF",
+    backgroundColor: "#f0f8ff",
   },
   levelName: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 4,
-    color: '#000'
+    color: "#000",
   },
   levelDescription: {
     fontSize: 14,
-    color: '#666'
+    color: "#666",
   },
   interestsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
-    marginBottom: 24
+    marginBottom: 24,
   },
   interestChip: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderWidth: 2,
-    borderColor: '#ddd',
-    borderRadius: 20
+    borderColor: "#ddd",
+    borderRadius: 20,
   },
   interestChipSelected: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF'
+    backgroundColor: "#007AFF",
+    borderColor: "#007AFF",
   },
   interestText: {
     fontSize: 14,
-    color: '#000'
+    color: "#000",
   },
   interestTextSelected: {
-    color: '#fff'
-  }
+    color: "#fff",
+  },
 });

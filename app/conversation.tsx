@@ -1,23 +1,30 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   Alert,
-  ActivityIndicator
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { useConversationStore } from '../src/stores/useConversationStore';
-import { useUserStore } from '../src/stores/useUserStore';
-import AIConversationService from '../src/services/AIConversationService';
-import SpeechAnalysisService from '../src/services/SpeechAnalysisService';
-import { ConversationMessage } from '../src/types';
+  ActivityIndicator,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import {
+  useAudioRecorder,
+  RecordingPresets,
+  useAudioRecorderState,
+} from "expo-audio";
+import { useConversationStore } from "../src/stores/useConversationStore";
+import { useUserStore } from "../src/stores/useUserStore";
+import AIConversationService from "../src/services/AIConversationService";
+import SpeechAnalysisService from "../src/services/SpeechAnalysisService";
+import { ConversationMessage } from "../src/types";
+import { ENV } from "../src/config/env";
 
-// In production, load from environment
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || 'your-key-here';
+// Load API key from environment config
+const OPENAI_API_KEY = ENV.OPENAI_API_KEY || "your-key-here";
+console.log("OPENAI_API_KEY:", OPENAI_API_KEY ? "✓ Loaded" : "✗ Missing");
 
 export default function ConversationScreen() {
   const router = useRouter();
@@ -30,21 +37,27 @@ export default function ConversationScreen() {
     addMessage,
     addCorrections,
     setProcessing,
-    endSession
+    endSession,
   } = useConversationStore();
 
   const { profile, updateProgress } = useUserStore();
 
   const [aiService] = useState(() => new AIConversationService(OPENAI_API_KEY));
-  const [speechService] = useState(() => new SpeechAnalysisService(OPENAI_API_KEY));
+  const [speechService] = useState(
+    () => new SpeechAnalysisService(OPENAI_API_KEY)
+  );
 
   const [isRecording, setIsRecording] = useState(false);
   const [showCorrections, setShowCorrections] = useState(false);
   const [sessionStartTime] = useState(Date.now());
 
+  // Audio recording setup
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(audioRecorder);
+
   useEffect(() => {
     if (!currentSession) {
-      router.replace('/home');
+      router.replace("/home");
       return;
     }
 
@@ -56,7 +69,17 @@ export default function ConversationScreen() {
         profile.proficiencyLevel
       );
       aiService.startScenario(
-        { id: currentSession.missionId, title: '', description: '', difficulty: profile.proficiencyLevel, category: 'custom', objectives: [], estimatedDuration: 0, requiredVocabulary: [], culturalNotes: [] },
+        {
+          id: currentSession.missionId,
+          title: "",
+          description: "",
+          difficulty: profile.proficiencyLevel,
+          category: "custom",
+          objectives: [],
+          estimatedDuration: 0,
+          requiredVocabulary: [],
+          culturalNotes: [],
+        },
         currentSession.aiPersonality
       );
     }
@@ -77,18 +100,18 @@ export default function ConversationScreen() {
     setProcessing(true);
 
     try {
-      const response = await aiService.sendMessage('Hello!');
+      const response = await aiService.sendMessage("Hello!");
 
       const aiMessage: ConversationMessage = {
         id: Date.now().toString(),
-        role: 'assistant',
+        role: "assistant",
         content: response.response,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
 
       addMessage(aiMessage);
     } catch (error) {
-      console.error('Failed to get initial greeting:', error);
+      console.error("Failed to get initial greeting:", error);
     } finally {
       setProcessing(false);
     }
@@ -97,10 +120,13 @@ export default function ConversationScreen() {
   const handleStartRecording = async () => {
     try {
       speechService.markPromptTime();
-      await speechService.startRecording();
+      await speechService.startRecording(audioRecorder);
       setIsRecording(true);
     } catch (error) {
-      Alert.alert('Error', 'Failed to start recording. Please check microphone permissions.');
+      Alert.alert(
+        "Error",
+        "Failed to start recording. Please check microphone permissions."
+      );
     }
   };
 
@@ -109,7 +135,8 @@ export default function ConversationScreen() {
     setProcessing(true);
 
     try {
-      const { uri, duration, responseLatency } = await speechService.stopRecording();
+      const { uri, duration, responseLatency } =
+        await speechService.stopRecording(audioRecorder);
 
       // Transcribe the audio
       const transcription = await speechService.transcribeAudio(uri);
@@ -117,10 +144,10 @@ export default function ConversationScreen() {
       // Add user message
       const userMessage: ConversationMessage = {
         id: Date.now().toString(),
-        role: 'user',
+        role: "user",
         content: transcription,
         timestamp: new Date(),
-        audioUrl: uri
+        audioUrl: uri,
       };
       addMessage(userMessage);
 
@@ -130,9 +157,9 @@ export default function ConversationScreen() {
       // Add AI message
       const aiMessage: ConversationMessage = {
         id: Date.now().toString(),
-        role: 'assistant',
+        role: "assistant",
         content: response.response,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
       addMessage(aiMessage);
 
@@ -147,8 +174,8 @@ export default function ConversationScreen() {
         await handleEndSession(true);
       }
     } catch (error) {
-      console.error('Error processing recording:', error);
-      Alert.alert('Error', 'Failed to process your speech. Please try again.');
+      console.error("Error processing recording:", error);
+      Alert.alert("Error", "Failed to process your speech. Please try again.");
     } finally {
       setProcessing(false);
     }
@@ -162,29 +189,35 @@ export default function ConversationScreen() {
 
     // Update progress
     await updateProgress({
-      sessionsCompleted: (useUserStore.getState().progress?.sessionsCompleted || 0) + 1,
-      totalPracticeTime: (useUserStore.getState().progress?.totalPracticeTime || 0) + Math.round(sessionDuration),
-      fluencyTrend: [...(useUserStore.getState().progress?.fluencyTrend || []), feedback.fluencyScore]
+      sessionsCompleted:
+        (useUserStore.getState().progress?.sessionsCompleted || 0) + 1,
+      totalPracticeTime:
+        (useUserStore.getState().progress?.totalPracticeTime || 0) +
+        Math.round(sessionDuration),
+      fluencyTrend: [
+        ...(useUserStore.getState().progress?.fluencyTrend || []),
+        feedback.fluencyScore,
+      ],
     });
 
     endSession(passed);
-    router.push('/results');
+    router.push("/results");
   };
 
   const handleExitEarly = () => {
     Alert.alert(
-      'Exit Session?',
-      'Are you sure you want to exit? Your progress will not be saved.',
+      "Exit Session?",
+      "Are you sure you want to exit? Your progress will not be saved.",
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Exit',
-          style: 'destructive',
+          text: "Exit",
+          style: "destructive",
           onPress: () => {
             useConversationStore.getState().resetConversation();
-            router.replace('/home');
-          }
-        }
+            router.replace("/home");
+          },
+        },
       ]
     );
   };
@@ -219,13 +252,15 @@ export default function ConversationScreen() {
             key={message.id}
             style={[
               styles.messageBubble,
-              message.role === 'user' ? styles.userMessage : styles.aiMessage
+              message.role === "user" ? styles.userMessage : styles.aiMessage,
             ]}
           >
             <Text
               style={[
                 styles.messageText,
-                message.role === 'user' ? styles.userMessageText : styles.aiMessageText
+                message.role === "user"
+                  ? styles.userMessageText
+                  : styles.aiMessageText,
               ]}
             >
               {message.content}
@@ -241,23 +276,34 @@ export default function ConversationScreen() {
       </ScrollView>
 
       {/* Corrections Panel */}
-      {showCorrections && useConversationStore.getState().recentCorrections.length > 0 && (
-        <View style={styles.correctionsPanel}>
-          <View style={styles.correctionsPanelHeader}>
-            <Text style={styles.correctionsPanelTitle}>💡 Quick Corrections</Text>
-            <TouchableOpacity onPress={() => setShowCorrections(false)}>
-              <Text style={styles.correctionsPanelClose}>✕</Text>
-            </TouchableOpacity>
-          </View>
-          {useConversationStore.getState().recentCorrections.map((correction, index) => (
-            <View key={index} style={styles.correctionItem}>
-              <Text style={styles.correctionOriginal}>❌ {correction.original}</Text>
-              <Text style={styles.correctionCorrected}>✅ {correction.corrected}</Text>
-              <Text style={styles.correctionExplanation}>{correction.explanation}</Text>
+      {showCorrections &&
+        useConversationStore.getState().recentCorrections.length > 0 && (
+          <View style={styles.correctionsPanel}>
+            <View style={styles.correctionsPanelHeader}>
+              <Text style={styles.correctionsPanelTitle}>
+                💡 Quick Corrections
+              </Text>
+              <TouchableOpacity onPress={() => setShowCorrections(false)}>
+                <Text style={styles.correctionsPanelClose}>✕</Text>
+              </TouchableOpacity>
             </View>
-          ))}
-        </View>
-      )}
+            {useConversationStore
+              .getState()
+              .recentCorrections.map((correction, index) => (
+                <View key={index} style={styles.correctionItem}>
+                  <Text style={styles.correctionOriginal}>
+                    ❌ {correction.original}
+                  </Text>
+                  <Text style={styles.correctionCorrected}>
+                    ✅ {correction.corrected}
+                  </Text>
+                  <Text style={styles.correctionExplanation}>
+                    {correction.explanation}
+                  </Text>
+                </View>
+              ))}
+          </View>
+        )}
 
       {/* Recording Controls */}
       <View style={styles.controls}>
@@ -265,7 +311,7 @@ export default function ConversationScreen() {
           style={[
             styles.recordButton,
             isRecording && styles.recordButtonActive,
-            isProcessing && styles.recordButtonDisabled
+            isProcessing && styles.recordButtonDisabled,
           ]}
           onPress={isRecording ? handleStopRecording : handleStartRecording}
           disabled={isProcessing}
@@ -275,17 +321,17 @@ export default function ConversationScreen() {
             <ActivityIndicator color="#fff" size="large" />
           ) : (
             <Text style={styles.recordButtonText}>
-              {isRecording ? '🔴 Stop' : '🎤 Speak'}
+              {isRecording ? "🔴 Stop" : "🎤 Speak"}
             </Text>
           )}
         </TouchableOpacity>
 
         <Text style={styles.controlsHint}>
           {isRecording
-            ? 'Recording... Tap to stop'
+            ? "Recording... Tap to stop"
             : isProcessing
-            ? 'Processing...'
-            : 'Tap to respond'}
+            ? "Processing..."
+            : "Tap to respond"}
         </Text>
       </View>
     </SafeAreaView>
@@ -295,155 +341,155 @@ export default function ConversationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8'
+    backgroundColor: "#f8f8f8",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0'
+    borderBottomColor: "#e0e0e0",
   },
   exitButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12
+    backgroundColor: "#f0f0f0",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
   },
   exitButtonText: {
     fontSize: 18,
-    color: '#666'
+    color: "#666",
   },
   headerInfo: {
-    flex: 1
+    flex: 1,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#000'
+    fontWeight: "bold",
+    color: "#000",
   },
   headerSubtitle: {
     fontSize: 13,
-    color: '#666'
+    color: "#666",
   },
   messagesContainer: {
-    flex: 1
+    flex: 1,
   },
   messagesContent: {
     padding: 16,
-    paddingBottom: 80
+    paddingBottom: 80,
   },
   messageBubble: {
-    maxWidth: '80%',
+    maxWidth: "80%",
     padding: 12,
     borderRadius: 16,
-    marginBottom: 12
+    marginBottom: 12,
   },
   userMessage: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#007AFF'
+    alignSelf: "flex-end",
+    backgroundColor: "#007AFF",
   },
   aiMessage: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#fff'
+    alignSelf: "flex-start",
+    backgroundColor: "#fff",
   },
   messageText: {
     fontSize: 16,
-    lineHeight: 22
+    lineHeight: 22,
   },
   userMessageText: {
-    color: '#fff'
+    color: "#fff",
   },
   aiMessageText: {
-    color: '#000'
+    color: "#000",
   },
   correctionsPanel: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 100,
     left: 16,
     right: 16,
-    backgroundColor: '#fff9e6',
+    backgroundColor: "#fff9e6",
     borderRadius: 12,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 5
+    elevation: 5,
   },
   correctionsPanelHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
   },
   correctionsPanelTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#000'
+    fontWeight: "bold",
+    color: "#000",
   },
   correctionsPanelClose: {
     fontSize: 20,
-    color: '#666'
+    color: "#666",
   },
   correctionItem: {
     marginBottom: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0e6cc'
+    borderBottomColor: "#f0e6cc",
   },
   correctionOriginal: {
     fontSize: 14,
-    color: '#d32f2f',
-    marginBottom: 4
+    color: "#d32f2f",
+    marginBottom: 4,
   },
   correctionCorrected: {
     fontSize: 14,
-    color: '#2e7d32',
-    marginBottom: 4
+    color: "#2e7d32",
+    marginBottom: 4,
   },
   correctionExplanation: {
     fontSize: 12,
-    color: '#666',
-    fontStyle: 'italic'
+    color: "#666",
+    fontStyle: "italic",
   },
   controls: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    alignItems: 'center'
+    borderTopColor: "#e0e0e0",
+    alignItems: "center",
   },
   recordButton: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8
+    backgroundColor: "#007AFF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
   },
   recordButtonActive: {
-    backgroundColor: '#FF3B30'
+    backgroundColor: "#FF3B30",
   },
   recordButtonDisabled: {
-    backgroundColor: '#ccc'
+    backgroundColor: "#ccc",
   },
   recordButtonText: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff'
+    fontWeight: "bold",
+    color: "#fff",
   },
   controlsHint: {
     fontSize: 13,
-    color: '#666'
-  }
+    color: "#666",
+  },
 });

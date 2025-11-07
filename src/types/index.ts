@@ -1,8 +1,24 @@
 // Core types for the language learning app
 
-export type LanguageCode = 'es' | 'fr' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh' | 'ar' | 'ru';
+export type LanguageCode =
+  | "en"
+  | "es"
+  | "fr"
+  | "de"
+  | "it"
+  | "pt"
+  | "ja"
+  | "ko"
+  | "zh"
+  | "ar"
+  | "ru";
 
-export type ProficiencyLevel = 'beginner' | 'elementary' | 'intermediate' | 'advanced' | 'fluent';
+export type ProficiencyLevel =
+  | "beginner"
+  | "elementary"
+  | "intermediate"
+  | "advanced"
+  | "fluent";
 
 export interface UserProfile {
   id: string;
@@ -29,7 +45,13 @@ export interface ScenarioMission {
   title: string;
   description: string;
   difficulty: ProficiencyLevel;
-  category: 'travel' | 'business' | 'social' | 'shopping' | 'emergency' | 'custom';
+  category:
+    | "travel"
+    | "business"
+    | "social"
+    | "shopping"
+    | "emergency"
+    | "custom";
   objectives: string[];
   estimatedDuration: number; // in minutes
   requiredVocabulary: string[];
@@ -38,7 +60,7 @@ export interface ScenarioMission {
 
 export interface ConversationMessage {
   id: string;
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   content: string;
   timestamp: Date;
   audioUrl?: string;
@@ -51,7 +73,7 @@ export interface GrammarCorrection {
   original: string;
   corrected: string;
   explanation: string;
-  errorType: 'grammar' | 'vocabulary' | 'syntax' | 'idiom';
+  errorType: "grammar" | "vocabulary" | "syntax" | "idiom";
 }
 
 export interface PronunciationFeedback {
@@ -69,8 +91,8 @@ export interface AIPersonality {
   id: string;
   name: string;
   description: string;
-  personality: 'patient' | 'challenging' | 'friendly' | 'formal' | 'casual';
-  speakingSpeed: 'slow' | 'normal' | 'fast';
+  personality: "patient" | "challenging" | "friendly" | "formal" | "casual";
+  speakingSpeed: "slow" | "normal" | "fast";
   interruptionLikelihood: number; // 0-1
   avatar: string;
 }

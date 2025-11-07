@@ -1,17 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { useConversationStore } from '../src/stores/useConversationStore';
-import AIConversationService from '../src/services/AIConversationService';
+} from "react-native";
+import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useConversationStore } from "../src/stores/useConversationStore";
+import AIConversationService from "../src/services/AIConversationService";
+import { ENV } from "../src/config/env";
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || 'your-key-here';
+const OPENAI_API_KEY = ENV.OPENAI_API_KEY || "your-key-here";
 
 export default function ResultsScreen() {
   const router = useRouter();
@@ -29,7 +30,7 @@ export default function ResultsScreen() {
 
   useEffect(() => {
     if (!currentSession) {
-      router.replace('/home');
+      router.replace("/home");
       return;
     }
 
@@ -42,7 +43,7 @@ export default function ResultsScreen() {
       const result = await aiService.generateFinalFeedback();
       setFeedback(result);
     } catch (error) {
-      console.error('Failed to load feedback:', error);
+      console.error("Failed to load feedback:", error);
     } finally {
       setIsLoading(false);
     }
@@ -50,14 +51,17 @@ export default function ResultsScreen() {
 
   const handleContinue = () => {
     resetConversation();
-    router.replace('/home');
+    router.replace("/home");
   };
 
   if (!currentSession) return null;
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+      >
         {/* Header */}
         <View style={styles.header}>
           {currentSession.passed ? (
@@ -79,7 +83,9 @@ export default function ResultsScreen() {
 
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Analyzing your performance...</Text>
+            <Text style={styles.loadingText}>
+              Analyzing your performance...
+            </Text>
           </View>
         ) : feedback ? (
           <>
@@ -92,7 +98,7 @@ export default function ResultsScreen() {
                 <View
                   style={[
                     styles.scoreBarFill,
-                    { width: `${feedback.fluencyScore}%` }
+                    { width: `${feedback.fluencyScore}%` },
                   ]}
                 />
               </View>
@@ -126,7 +132,10 @@ export default function ResultsScreen() {
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
-                  {currentSession.messages.filter((m) => m.role === 'user').length}
+                  {
+                    currentSession.messages.filter((m) => m.role === "user")
+                      .length
+                  }
                 </Text>
                 <Text style={styles.statLabel}>Exchanges</Text>
               </View>
@@ -168,7 +177,10 @@ export default function ResultsScreen() {
         ) : null}
 
         {/* Continue Button */}
-        <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
+        <TouchableOpacity
+          style={styles.continueButton}
+          onPress={handleContinue}
+        >
           <Text style={styles.continueButtonText}>Continue Learning</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -179,168 +191,168 @@ export default function ResultsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8'
+    backgroundColor: "#f8f8f8",
   },
   scrollView: {
-    flex: 1
+    flex: 1,
   },
   content: {
     padding: 24,
-    paddingTop: 40
+    paddingTop: 40,
   },
   header: {
-    alignItems: 'center',
-    marginBottom: 32
+    alignItems: "center",
+    marginBottom: 32,
   },
   successEmoji: {
     fontSize: 64,
-    marginBottom: 16
+    marginBottom: 16,
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 8
+    fontWeight: "bold",
+    color: "#000",
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666'
+    color: "#666",
   },
   loadingContainer: {
     padding: 40,
-    alignItems: 'center'
+    alignItems: "center",
   },
   loadingText: {
     fontSize: 16,
-    color: '#666'
+    color: "#666",
   },
   scoreCard: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 24,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 24,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 3
+    elevation: 3,
   },
   scoreLabel: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 8
+    color: "#666",
+    marginBottom: 8,
   },
   scoreValue: {
     fontSize: 64,
-    fontWeight: 'bold',
-    color: '#007AFF'
+    fontWeight: "bold",
+    color: "#007AFF",
   },
   scoreSubtext: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 16
+    color: "#666",
+    marginBottom: 16,
   },
   scoreBar: {
-    width: '100%',
+    width: "100%",
     height: 8,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: "#e0e0e0",
     borderRadius: 4,
-    overflow: 'hidden'
+    overflow: "hidden",
   },
   scoreBarFill: {
-    height: '100%',
-    backgroundColor: '#007AFF'
+    height: "100%",
+    backgroundColor: "#007AFF",
   },
   section: {
-    marginBottom: 24
+    marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 12
+    fontWeight: "bold",
+    color: "#000",
+    marginBottom: 12,
   },
   listItem: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 8,
     padding: 12,
-    marginBottom: 8
+    marginBottom: 8,
   },
   listItemText: {
     fontSize: 15,
-    color: '#333',
-    lineHeight: 22
+    color: "#333",
+    lineHeight: 22,
   },
   statsGrid: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
-    marginBottom: 24
+    marginBottom: 24,
   },
   statItem: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center'
+    alignItems: "center",
   },
   statValue: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    marginBottom: 4
+    fontWeight: "bold",
+    color: "#007AFF",
+    marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
-    textAlign: 'center'
+    color: "#666",
+    textAlign: "center",
   },
   nextStepCard: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
+    flexDirection: "row",
+    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    alignItems: 'center'
+    alignItems: "center",
   },
   nextStepNumber: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#007AFF',
-    color: '#fff',
+    backgroundColor: "#007AFF",
+    color: "#fff",
     fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: "bold",
+    textAlign: "center",
     lineHeight: 32,
-    marginRight: 12
+    marginRight: 12,
   },
   nextStepText: {
     flex: 1,
     fontSize: 15,
-    color: '#333'
+    color: "#333",
   },
   motivationCard: {
-    backgroundColor: '#000',
+    backgroundColor: "#000",
     borderRadius: 16,
     padding: 20,
-    marginBottom: 24
+    marginBottom: 24,
   },
   motivationText: {
     fontSize: 15,
-    color: '#fff',
+    color: "#fff",
     lineHeight: 22,
-    textAlign: 'center'
+    textAlign: "center",
   },
   continueButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center'
+    alignItems: "center",
   },
   continueButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: '600'
-  }
+    fontWeight: "600",
+  },
 });

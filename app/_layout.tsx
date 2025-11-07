@@ -1,12 +1,15 @@
-import { useEffect } from 'react';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { useUserStore } from '../src/stores/useUserStore';
+import { useEffect } from "react";
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useUserStore } from "../src/stores/useUserStore";
+import { validateEnv } from "../src/config/env";
 
 export default function RootLayout() {
   const loadUserData = useUserStore((state) => state.loadUserData);
 
   useEffect(() => {
+    // Validate environment variables on app startup
+    validateEnv();
     loadUserData();
   }, []);
 
@@ -16,7 +19,7 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: '#ffffff' }
+          contentStyle: { backgroundColor: "#ffffff" },
         }}
       >
         <Stack.Screen name="index" />

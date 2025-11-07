@@ -1,17 +1,17 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { useUserStore } from '../src/stores/useUserStore';
-import { useConversationStore } from '../src/stores/useConversationStore';
-import { SCENARIOS, AI_PERSONALITIES } from '../src/constants/scenarios';
-import { ScenarioMission, AIPersonality, ProficiencyLevel } from '../src/types';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { useUserStore } from "../src/stores/useUserStore";
+import { useConversationStore } from "../src/stores/useConversationStore";
+import { SCENARIOS, AI_PERSONALITIES } from "../src/constants/scenarios";
+import { ScenarioMission, AIPersonality, ProficiencyLevel } from "../src/types";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -26,7 +26,13 @@ export default function HomeScreen() {
   const availableScenarios = SCENARIOS.filter((scenario) => {
     if (!profile) return true;
 
-    const levelOrder: ProficiencyLevel[] = ['beginner', 'elementary', 'intermediate', 'advanced', 'fluent'];
+    const levelOrder: ProficiencyLevel[] = [
+      "beginner",
+      "elementary",
+      "intermediate",
+      "advanced",
+      "fluent",
+    ];
     const userLevelIndex = levelOrder.indexOf(profile.proficiencyLevel);
     const scenarioLevelIndex = levelOrder.indexOf(scenario.difficulty);
 
@@ -36,7 +42,7 @@ export default function HomeScreen() {
 
   const handleStartScenario = (scenario: ScenarioMission) => {
     startSession(scenario, selectedPersonality);
-    router.push('/conversation');
+    router.push("/conversation");
   };
 
   return (
@@ -46,18 +52,23 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <Text style={styles.greeting}>Hello, {profile?.name}! 👋</Text>
           <Text style={styles.subtitle}>
-            Learning {profile?.targetLanguage.toUpperCase()} · {profile?.proficiencyLevel}
+            Learning {profile?.targetLanguage.toUpperCase()} ·{" "}
+            {profile?.proficiencyLevel}
           </Text>
         </View>
 
         {/* Progress Stats */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{progress?.sessionsCompleted || 0}</Text>
+            <Text style={styles.statValue}>
+              {progress?.sessionsCompleted || 0}
+            </Text>
             <Text style={styles.statLabel}>Sessions</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{progress?.totalPracticeTime || 0}m</Text>
+            <Text style={styles.statValue}>
+              {progress?.totalPracticeTime || 0}m
+            </Text>
             <Text style={styles.statLabel}>Practice Time</Text>
           </View>
           <View style={styles.statCard}>
@@ -75,11 +86,14 @@ export default function HomeScreen() {
                 key={personality.id}
                 style={[
                   styles.personalityCard,
-                  selectedPersonality.id === personality.id && styles.personalityCardSelected
+                  selectedPersonality.id === personality.id &&
+                    styles.personalityCardSelected,
                 ]}
                 onPress={() => setSelectedPersonality(personality)}
               >
-                <Text style={styles.personalityAvatar}>{personality.avatar}</Text>
+                <Text style={styles.personalityAvatar}>
+                  {personality.avatar}
+                </Text>
                 <Text style={styles.personalityName}>{personality.name}</Text>
                 <Text style={styles.personalityDescription}>
                   {personality.description}
@@ -109,7 +123,14 @@ export default function HomeScreen() {
                     {scenario.description}
                   </Text>
                 </View>
-                <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(scenario.difficulty) }]}>
+                <View
+                  style={[
+                    styles.difficultyBadge,
+                    {
+                      backgroundColor: getDifficultyColor(scenario.difficulty),
+                    },
+                  ]}
+                >
                   <Text style={styles.difficultyText}>
                     {scenario.difficulty.toUpperCase()}
                   </Text>
@@ -137,12 +158,10 @@ export default function HomeScreen() {
 
         {/* Motivational Message */}
         <View style={styles.motivationCard}>
-          <Text style={styles.motivationTitle}>
-            🔥 The Fluency Challenge
-          </Text>
+          <Text style={styles.motivationTitle}>🔥 The Fluency Challenge</Text>
           <Text style={styles.motivationText}>
-            Every conversation pushes you closer to real fluency. No streaks. No points.
-            Just you, speaking naturally under real pressure.
+            Every conversation pushes you closer to real fluency. No streaks. No
+            points. Just you, speaking naturally under real pressure.
           </Text>
         </View>
       </ScrollView>
@@ -152,177 +171,177 @@ export default function HomeScreen() {
 
 function getDifficultyColor(difficulty: ProficiencyLevel): string {
   switch (difficulty) {
-    case 'beginner':
-      return '#34C759';
-    case 'elementary':
-      return '#5AC8FA';
-    case 'intermediate':
-      return '#FF9500';
-    case 'advanced':
-      return '#FF3B30';
+    case "beginner":
+      return "#34C759";
+    case "elementary":
+      return "#5AC8FA";
+    case "intermediate":
+      return "#FF9500";
+    case "advanced":
+      return "#FF3B30";
     default:
-      return '#8E8E93';
+      return "#8E8E93";
   }
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8'
+    backgroundColor: "#f8f8f8",
   },
   scrollView: {
-    flex: 1
+    flex: 1,
   },
   header: {
     padding: 24,
-    backgroundColor: '#fff'
+    backgroundColor: "#fff",
   },
   greeting: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 4
+    fontWeight: "bold",
+    color: "#000",
+    marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666'
+    color: "#666",
   },
   statsContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: 16,
-    gap: 12
+    gap: 12,
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center'
+    alignItems: "center",
   },
   statValue: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    marginBottom: 4
+    fontWeight: "bold",
+    color: "#007AFF",
+    marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#666'
+    color: "#666",
   },
   section: {
     padding: 16,
-    marginTop: 8
+    marginTop: 8,
   },
   sectionTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 8
+    fontWeight: "bold",
+    color: "#000",
+    marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 16
+    color: "#666",
+    marginBottom: 16,
   },
   personalityCard: {
     width: 140,
     padding: 16,
     marginRight: 12,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#e0e0e0'
+    borderColor: "#e0e0e0",
   },
   personalityCardSelected: {
-    borderColor: '#007AFF',
-    backgroundColor: '#f0f8ff'
+    borderColor: "#007AFF",
+    backgroundColor: "#f0f8ff",
   },
   personalityAvatar: {
     fontSize: 36,
-    marginBottom: 8
+    marginBottom: 8,
   },
   personalityName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 4
+    fontWeight: "600",
+    color: "#000",
+    marginBottom: 4,
   },
   personalityDescription: {
     fontSize: 11,
-    color: '#666',
-    lineHeight: 14
+    color: "#666",
+    lineHeight: 14,
   },
   scenarioCard: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 3
+    elevation: 3,
   },
   scenarioHeader: {
-    flexDirection: 'row',
-    marginBottom: 12
+    flexDirection: "row",
+    marginBottom: 12,
   },
   scenarioTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 6
+    fontWeight: "bold",
+    color: "#000",
+    marginBottom: 6,
   },
   scenarioDescription: {
     fontSize: 14,
-    color: '#666',
-    lineHeight: 20
+    color: "#666",
+    lineHeight: 20,
   },
   difficultyBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
-    height: 24
+    height: 24,
   },
   difficultyText: {
     fontSize: 10,
-    fontWeight: 'bold',
-    color: '#fff'
+    fontWeight: "bold",
+    color: "#fff",
   },
   scenarioMeta: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 16,
-    marginBottom: 12
+    marginBottom: 12,
   },
   scenarioMetaText: {
     fontSize: 13,
-    color: '#666'
+    color: "#666",
   },
   scenarioFooter: {
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    paddingTop: 12
+    borderTopColor: "#f0f0f0",
+    paddingTop: 12,
   },
   startButton: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#007AFF'
+    fontWeight: "600",
+    color: "#007AFF",
   },
   motivationCard: {
     margin: 16,
     padding: 20,
-    backgroundColor: '#000',
-    borderRadius: 16
+    backgroundColor: "#000",
+    borderRadius: 16,
   },
   motivationTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8
+    fontWeight: "bold",
+    color: "#fff",
+    marginBottom: 8,
   },
   motivationText: {
     fontSize: 14,
-    color: '#ccc',
-    lineHeight: 20
-  }
+    color: "#ccc",
+    lineHeight: 20,
+  },
 });

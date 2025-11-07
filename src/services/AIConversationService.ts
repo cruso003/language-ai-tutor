@@ -1,12 +1,12 @@
-import OpenAI from 'openai';
+import OpenAI from "openai";
 import {
   ConversationMessage,
   ScenarioMission,
   AIPersonality,
   GrammarCorrection,
   LanguageCode,
-  ProficiencyLevel
-} from '../types';
+  ProficiencyLevel,
+} from "../types";
 
 export class AIConversationService {
   private openai: OpenAI;
@@ -20,11 +20,11 @@ export class AIConversationService {
   constructor(apiKey: string) {
     this.openai = new OpenAI({
       apiKey,
-      dangerouslyAllowBrowser: true // For development - move to backend in production
+      dangerouslyAllowBrowser: true, // For development - move to backend in production
     });
-    this.targetLanguage = 'es';
-    this.nativeLanguage = 'en';
-    this.proficiencyLevel = 'beginner';
+    this.targetLanguage = "es" as LanguageCode;
+    this.nativeLanguage = "en" as LanguageCode;
+    this.proficiencyLevel = "beginner" as ProficiencyLevel;
   }
 
   setLanguageSettings(
@@ -44,22 +44,33 @@ export class AIConversationService {
   }
 
   private buildSystemPrompt(): string {
-    const languageNames: Record<LanguageCode, string> = {
-      es: 'Spanish', fr: 'French', de: 'German', it: 'Italian',
-      pt: 'Portuguese', ja: 'Japanese', ko: 'Korean', zh: 'Chinese',
-      ar: 'Arabic', ru: 'Russian'
-    };
+    const languageNames = {
+      en: "English",
+      es: "Spanish",
+      fr: "French",
+      de: "German",
+      it: "Italian",
+      pt: "Portuguese",
+      ja: "Japanese",
+      ko: "Korean",
+      zh: "Chinese",
+      ar: "Arabic",
+      ru: "Russian",
+    } as const;
 
-    const targetLang = languageNames[this.targetLanguage] || 'the target language';
-    const nativeLang = languageNames[this.nativeLanguage] || 'English';
+    const targetLang =
+      languageNames[this.targetLanguage] || "the target language";
+    const nativeLang = languageNames[this.nativeLanguage] || "English";
 
-    return `You are ${this.aiPersonality?.name}, a ${this.aiPersonality?.personality} language tutor helping someone learn ${targetLang}.
+    return `You are ${this.aiPersonality?.name}, a ${
+      this.aiPersonality?.personality
+    } language tutor helping someone learn ${targetLang}.
 
 SCENARIO: ${this.currentScenario?.title}
 ${this.currentScenario?.description}
 
 STUDENT LEVEL: ${this.proficiencyLevel}
-OBJECTIVES: ${this.currentScenario?.objectives.join(', ')}
+OBJECTIVES: ${this.currentScenario?.objectives.join(", ")}
 
 YOUR ROLE:
 - You are playing a character in this scenario (e.g., if it's a café scenario, you're the barista)
@@ -80,10 +91,26 @@ CRITICAL RULES:
 8. End responses with a question or prompt to keep conversation flowing
 
 PERSONALITY TRAITS:
-${this.aiPersonality?.personality === 'patient' ? '- Speak slowly and clearly\n- Give encouraging feedback\n- Repeat if needed' : ''}
-${this.aiPersonality?.personality === 'challenging' ? '- Speak at normal/fast pace\n- Push for perfection\n- Use more complex vocabulary' : ''}
-${this.aiPersonality?.personality === 'friendly' ? '- Use casual language\n- Be warm and supportive\n- Make jokes when appropriate' : ''}
-${this.aiPersonality?.personality === 'formal' ? '- Use formal register\n- Professional tone\n- Precise language' : ''}
+${
+  this.aiPersonality?.personality === "patient"
+    ? "- Speak slowly and clearly\n- Give encouraging feedback\n- Repeat if needed"
+    : ""
+}
+${
+  this.aiPersonality?.personality === "challenging"
+    ? "- Speak at normal/fast pace\n- Push for perfection\n- Use more complex vocabulary"
+    : ""
+}
+${
+  this.aiPersonality?.personality === "friendly"
+    ? "- Use casual language\n- Be warm and supportive\n- Make jokes when appropriate"
+    : ""
+}
+${
+  this.aiPersonality?.personality === "formal"
+    ? "- Use formal register\n- Professional tone\n- Precise language"
+    : ""
+}
 
 Remember: You're training them for REAL conversations. Make it realistic, make mistakes natural, and keep them speaking!`;
   }
@@ -96,37 +123,37 @@ Remember: You're training them for REAL conversations. Make it realistic, make m
     // Add user message to history
     this.conversationHistory.push({
       id: Date.now().toString(),
-      role: 'user',
+      role: "user",
       content: userMessage,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
 
     try {
       // Build messages for GPT-4
       const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-        { role: 'system', content: this.buildSystemPrompt() },
-        ...this.conversationHistory.map(msg => ({
-          role: msg.role as 'user' | 'assistant',
-          content: msg.content
-        }))
+        { role: "system", content: this.buildSystemPrompt() },
+        ...this.conversationHistory.map((msg) => ({
+          role: msg.role as "user" | "assistant",
+          content: msg.content,
+        })),
       ];
 
       // Call GPT-4 for conversation response
       const conversationResponse = await this.openai.chat.completions.create({
-        model: 'gpt-4-turbo-preview',
+        model: "gpt-4-turbo-preview",
         messages,
         temperature: 0.8,
-        max_tokens: 200
+        max_tokens: 200,
       });
 
-      const aiResponse = conversationResponse.choices[0].message.content || '';
+      const aiResponse = conversationResponse.choices[0].message.content || "";
 
       // Add AI response to history
       this.conversationHistory.push({
         id: Date.now().toString(),
-        role: 'assistant',
+        role: "assistant",
         content: aiResponse,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       // Analyze for corrections (in parallel)
@@ -138,15 +165,17 @@ Remember: You're training them for REAL conversations. Make it realistic, make m
       return {
         response: aiResponse,
         corrections,
-        shouldEndSession
+        shouldEndSession,
       };
     } catch (error) {
-      console.error('AI Conversation Error:', error);
-      throw new Error('Failed to get AI response');
+      console.error("AI Conversation Error:", error);
+      throw new Error("Failed to get AI response");
     }
   }
 
-  private async analyzeForCorrections(userMessage: string): Promise<GrammarCorrection[]> {
+  private async analyzeForCorrections(
+    userMessage: string
+  ): Promise<GrammarCorrection[]> {
     try {
       const correctionPrompt = `Analyze this ${this.targetLanguage} message from a ${this.proficiencyLevel} learner: "${userMessage}"
 
@@ -165,16 +194,18 @@ Return a JSON array of corrections in this format:
 If there are no significant errors, return an empty array [].`;
 
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4-turbo-preview',
-        messages: [{ role: 'user', content: correctionPrompt }],
+        model: "gpt-4-turbo-preview",
+        messages: [{ role: "user", content: correctionPrompt }],
         temperature: 0.3,
-        response_format: { type: 'json_object' }
+        response_format: { type: "json_object" },
       });
 
-      const result = JSON.parse(response.choices[0].message.content || '{"corrections":[]}');
+      const result = JSON.parse(
+        response.choices[0].message.content || '{"corrections":[]}'
+      );
       return result.corrections || [];
     } catch (error) {
-      console.error('Error analyzing corrections:', error);
+      console.error("Error analyzing corrections:", error);
       return [];
     }
   }
@@ -185,13 +216,20 @@ If there are no significant errors, return an empty array [].`;
     }
 
     try {
-      const evaluationPrompt = `Review this conversation for the scenario: "${this.currentScenario.title}"
+      const evaluationPrompt = `Review this conversation for the scenario: "${
+        this.currentScenario.title
+      }"
 
 OBJECTIVES:
-${this.currentScenario.objectives.map((obj, i) => `${i + 1}. ${obj}`).join('\n')}
+${this.currentScenario.objectives
+  .map((obj, i) => `${i + 1}. ${obj}`)
+  .join("\n")}
 
 CONVERSATION:
-${this.conversationHistory.slice(-10).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
+${this.conversationHistory
+  .slice(-10)
+  .map((msg) => `${msg.role}: ${msg.content}`)
+  .join("\n")}
 
 Has the student successfully completed ALL objectives? Consider:
 - Did they demonstrate the required language functions?
@@ -201,16 +239,18 @@ Has the student successfully completed ALL objectives? Consider:
 Respond with JSON: {"completed": true/false, "reason": "brief explanation"}`;
 
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4-turbo-preview',
-        messages: [{ role: 'user', content: evaluationPrompt }],
+        model: "gpt-4-turbo-preview",
+        messages: [{ role: "user", content: evaluationPrompt }],
         temperature: 0.2,
-        response_format: { type: 'json_object' }
+        response_format: { type: "json_object" },
       });
 
-      const result = JSON.parse(response.choices[0].message.content || '{"completed":false}');
+      const result = JSON.parse(
+        response.choices[0].message.content || '{"completed":false}'
+      );
       return result.completed || false;
     } catch (error) {
-      console.error('Error checking objectives:', error);
+      console.error("Error checking objectives:", error);
       return false;
     }
   }
@@ -228,7 +268,9 @@ STUDENT LEVEL: ${this.proficiencyLevel}
 SCENARIO: ${this.currentScenario?.title}
 
 CONVERSATION:
-${this.conversationHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n')}
+${this.conversationHistory
+  .map((msg) => `${msg.role}: ${msg.content}`)
+  .join("\n")}
 
 Provide detailed feedback in JSON format:
 {
@@ -241,21 +283,21 @@ Provide detailed feedback in JSON format:
 
     try {
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4-turbo-preview',
-        messages: [{ role: 'user', content: feedbackPrompt }],
+        model: "gpt-4-turbo-preview",
+        messages: [{ role: "user", content: feedbackPrompt }],
         temperature: 0.3,
-        response_format: { type: 'json_object' }
+        response_format: { type: "json_object" },
       });
 
-      return JSON.parse(response.choices[0].message.content || '{}');
+      return JSON.parse(response.choices[0].message.content || "{}");
     } catch (error) {
-      console.error('Error generating feedback:', error);
+      console.error("Error generating feedback:", error);
       return {
         fluencyScore: 50,
-        strengths: ['Completed the conversation'],
-        improvements: ['Continue practicing'],
+        strengths: ["Completed the conversation"],
+        improvements: ["Continue practicing"],
         vocabularyUsed: 0,
-        nextSteps: ['Try another scenario']
+        nextSteps: ["Try another scenario"],
       };
     }
   }

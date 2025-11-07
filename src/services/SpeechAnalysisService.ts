@@ -6,11 +6,32 @@
  * - Response latency (fluency indicator)
  * - Hesitation patterns
  * - Speech rate
+ *
+ * Usage with expo-audio:
+ *
+ * In your React component:
+ *
+ * import { useAudioRecorder, RecordingPresets, useAudioRecorderState } from 'expo-audio';
+ *
+ * const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+ * const recorderState = useAudioRecorderState(audioRecorder);
+ *
+ * // Start recording
+ * await speechService.startRecording(audioRecorder);
+ *
+ * // Stop recording
+ * const result = await speechService.stopRecording(audioRecorder);
  */
 
-import { Audio } from 'expo-av';
-import OpenAI from 'openai';
-import { PronunciationFeedback } from '../types';
+import {
+  useAudioRecorder,
+  AudioModule,
+  RecordingPresets,
+  setAudioModeAsync,
+  useAudioRecorderState,
+} from "expo-audio";
+import OpenAI from "openai";
+import { PronunciationFeedback } from "../types";
 
 export interface SpeechMetrics {
   responseLatency: number; // milliseconds from prompt to response
@@ -21,23 +42,29 @@ export interface SpeechMetrics {
 
 export class SpeechAnalysisService {
   private openai: OpenAI;
-  private recording: Audio.Recording | null = null;
   private recordingStartTime: number = 0;
   private promptTime: number = 0;
 
   constructor(apiKey: string) {
     this.openai = new OpenAI({
       apiKey,
-      dangerouslyAllowBrowser: true
+      dangerouslyAllowBrowser: true,
     });
   }
 
   async requestPermissions(): Promise<boolean> {
     try {
-      const { status } = await Audio.requestPermissionsAsync();
-      return status === 'granted';
+      const status = await AudioModule.requestRecordingPermissionsAsync();
+      if (status.granted) {
+        await setAudioModeAsync({
+          playsInSilentMode: true,
+          allowsRecording: true,
+        });
+        return true;
+      }
+      return false;
     } catch (error) {
-      console.error('Failed to request audio permissions:', error);
+      console.error("Failed to request audio permissions:", error);
       return false;
     }
   }
@@ -46,45 +73,39 @@ export class SpeechAnalysisService {
     this.promptTime = Date.now();
   }
 
-  async startRecording(): Promise<void> {
+  async startRecording(audioRecorder: any): Promise<void> {
     try {
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-
-      this.recording = recording;
+      await audioRecorder.prepareToRecordAsync();
+      audioRecorder.record();
       this.recordingStartTime = Date.now();
     } catch (error) {
-      console.error('Failed to start recording:', error);
+      console.error("Failed to start recording:", error);
       throw error;
     }
   }
 
-  async stopRecording(): Promise<{
+  async stopRecording(audioRecorder: any): Promise<{
     uri: string;
     duration: number;
     responseLatency: number;
   }> {
-    if (!this.recording) {
-      throw new Error('No active recording');
+    if (!audioRecorder) {
+      throw new Error("No audio recorder provided");
     }
 
     try {
-      await this.recording.stopAndUnloadAsync();
-      const uri = this.recording.getURI() || '';
+      // The recording will be available on audioRecorder.uri after stopping
+      await audioRecorder.stop();
       const duration = Date.now() - this.recordingStartTime;
       const responseLatency = this.recordingStartTime - this.promptTime;
 
-      this.recording = null;
-
-      return { uri, duration, responseLatency };
+      return {
+        uri: audioRecorder.uri,
+        duration,
+        responseLatency,
+      };
     } catch (error) {
-      console.error('Failed to stop recording:', error);
+      console.error("Failed to stop recording:", error);
       throw error;
     }
   }
@@ -96,17 +117,17 @@ export class SpeechAnalysisService {
       const blob = await response.blob();
 
       // Create File object for OpenAI
-      const file = new File([blob], 'audio.m4a', { type: 'audio/m4a' });
+      const file = new File([blob], "audio.m4a", { type: "audio/m4a" });
 
       const transcription = await this.openai.audio.transcriptions.create({
         file: file,
-        model: 'whisper-1',
-        language: 'es', // TODO: Make this dynamic based on target language
+        model: "whisper-1",
+        language: "es", // TODO: Make this dynamic based on target language
       });
 
       return transcription.text;
     } catch (error) {
-      console.error('Transcription error:', error);
+      console.error("Transcription error:", error);
       throw error;
     }
   }
@@ -143,16 +164,16 @@ Identify pronunciation issues and provide specific feedback. Return JSON:
 If pronunciation was good, return {"word": "", "accuracy": 90, "issues": []}`;
 
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4-turbo-preview',
-        messages: [{ role: 'user', content: analysisPrompt }],
+        model: "gpt-4-turbo-preview",
+        messages: [{ role: "user", content: analysisPrompt }],
         temperature: 0.2,
-        response_format: { type: 'json_object' }
+        response_format: { type: "json_object" },
       });
 
-      const feedback = JSON.parse(response.choices[0].message.content || '{}');
+      const feedback = JSON.parse(response.choices[0].message.content || "{}");
       return feedback as PronunciationFeedback;
     } catch (error) {
-      console.error('Pronunciation analysis error:', error);
+      console.error("Pronunciation analysis error:", error);
       return null;
     }
   }
@@ -167,13 +188,16 @@ If pronunciation was good, return {"word": "", "accuracy": 90, "issues": []}`;
     // Estimate hesitation count based on speech rate
     // Native speakers: 150-160 WPM, learners: 60-100 WPM
     const expectedWPM = 120;
-    const hesitationCount = Math.max(0, Math.floor((expectedWPM - wordsPerMinute) / 20));
+    const hesitationCount = Math.max(
+      0,
+      Math.floor((expectedWPM - wordsPerMinute) / 20)
+    );
 
     return {
       responseLatency,
       speechDuration,
       hesitationCount,
-      wordsPerMinute
+      wordsPerMinute,
     };
   }
 }
