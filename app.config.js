@@ -36,6 +36,7 @@ export default {
       favicon: "./assets/favicon.png",
     },
     extra: {
+      API_URL: process.env.API_URL,
       OPENAI_API_KEY: process.env.OPENAI_API_KEY,
       LIVEKIT_URL: process.env.LIVEKIT_URL,
       LIVEKIT_API_KEY: process.env.LIVEKIT_API_KEY,
