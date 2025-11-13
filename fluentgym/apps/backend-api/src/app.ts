@@ -4,6 +4,7 @@ import swagger from '@fastify/swagger';
 import swaggerUI from '@fastify/swagger-ui';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
+import multipart from '@fastify/multipart';
 import { z } from 'zod';
 import { loadSkillPacks } from './utils/skillPackLoader';
 import OpenAI from 'openai';
@@ -87,6 +88,14 @@ export async function buildApp(opts = {}) {
   await app.register(rateLimit, {
     max: rateLimitMax,
     timeWindow
+  });
+
+  // Multipart file upload support
+  await app.register(multipart, {
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB max file size
+      files: 1, // Max 1 file per request
+    },
   });
 
   // Swagger setup
