@@ -1,6 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, ActivityIndicator, View } from 'react-native';
 import { cn } from '../../utils/cn';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface ButtonProps {
   onPress: () => void;
@@ -25,13 +26,18 @@ export function Button({
   className,
   icon,
 }: ButtonProps) {
+  const { isDark } = useTheme();
   const baseStyles = 'rounded-xl items-center justify-center flex-row';
 
   const variantStyles = {
     primary: 'bg-primary-600 active:bg-primary-700',
     secondary: 'bg-secondary-600 active:bg-secondary-700',
-    outline: 'border-2 border-primary-600 bg-transparent active:bg-primary-50',
-    ghost: 'bg-transparent active:bg-gray-100',
+    outline: isDark
+      ? 'border-2 border-primary-500 bg-transparent active:bg-primary-900/20'
+      : 'border-2 border-primary-600 bg-transparent active:bg-primary-50',
+    ghost: isDark
+      ? 'bg-transparent active:bg-gray-800'
+      : 'bg-transparent active:bg-gray-100',
     danger: 'bg-error active:bg-red-600',
   };
 
@@ -45,7 +51,9 @@ export function Button({
     primary: 'text-white font-semibold',
     secondary: 'text-white font-semibold',
     outline: 'text-primary-600 font-semibold',
-    ghost: 'text-gray-700 font-semibold',
+    ghost: isDark
+      ? 'text-gray-300 font-semibold'
+      : 'text-gray-700 font-semibold',
     danger: 'text-white font-semibold',
   };
 
