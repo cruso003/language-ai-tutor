@@ -4,7 +4,27 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from "../src/contexts/AuthContext";
+import { ThemeProvider } from "../src/contexts/ThemeContext";
 import { validateEnv } from "../src/config/env";
+
+function StackNavigator() {
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: "transparent" },
+      }}
+    >
+      <Stack.Screen name="index" />
+      <Stack.Screen name="(auth)/login" />
+      <Stack.Screen name="(auth)/register" />
+      <Stack.Screen name="(auth)/verify" />
+      <Stack.Screen name="(auth)/forgot-password" />
+      <Stack.Screen name="onboarding" />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+    </Stack>
+  );
+}
 
 export default function RootLayout() {
   useEffect(() => {
@@ -14,21 +34,12 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthProvider>
-        <StatusBar style="auto" />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: "#ffffff" },
-          }}
-        >
-          <Stack.Screen name="index" />
-          <Stack.Screen name="(auth)/login" />
-          <Stack.Screen name="(auth)/register" />
-          <Stack.Screen name="(auth)/verify" />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        </Stack>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <StatusBar style="auto" />
+          <StackNavigator />
+        </AuthProvider>
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 }

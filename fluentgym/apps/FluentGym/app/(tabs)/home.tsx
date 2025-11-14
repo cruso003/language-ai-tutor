@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { useTheme } from '../../src/contexts/ThemeContext';
 import { Card, CardHeader, CardContent } from '../../src/components/ui/Card';
 import { Button } from '../../src/components/ui/Button';
 import { apiClient } from '../../src/api/client';
@@ -11,10 +12,17 @@ import { apiClient } from '../../src/api/client';
 export default function HomeScreen() {
   const router = useRouter();
   const { profile, user } = useAuth();
+  const { isDark } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
   const [progress, setProgress] = useState<any>(null);
   const [dailyPlan, setDailyPlan] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const bgColor = isDark ? 'bg-dark-bg' : 'bg-gray-50';
+  const cardColor = isDark ? 'bg-dark-card' : 'bg-white';
+  const textColor = isDark ? 'text-dark-text' : 'text-gray-900';
+  const textSecondary = isDark ? 'text-gray-400' : 'text-gray-600';
+  const borderColor = isDark ? 'border-gray-700' : 'border-gray-200';
 
   useEffect(() => {
     loadData();
@@ -47,77 +55,100 @@ export default function HomeScreen() {
   const sessionsCompleted = progress?.sessionsCompleted || 0;
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView className={`flex-1 ${bgColor}`} edges={['top']}>
       <ScrollView
         className="flex-1"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={isDark ? '#ffffff' : '#0284c7'}
+          />
+        }
       >
         {/* Header */}
-        <View className="px-6 pt-4 pb-6 bg-white">
+        <View className={`px-6 pt-4 pb-6 ${cardColor}`}>
           <View className="flex-row items-center justify-between mb-4">
-            <View>
-              <Text className="text-2xl font-bold text-gray-900">
-                Welcome back, {profile?.displayName || 'Learner'}! 👋
+            <View className="flex-1 mr-4">
+              <Text className={`text-2xl font-bold ${textColor}`}>
+                Welcome back, {profile?.displayName || 'Learner'}!
               </Text>
-              <Text className="text-base text-gray-600 mt-1">
+              <Text className={`text-base ${textSecondary} mt-1`}>
                 Ready to practice your {profile?.targetLanguage || 'skills'} today?
               </Text>
             </View>
-            <TouchableOpacity className="w-12 h-12 rounded-full bg-primary-100 items-center justify-center">
-              <Ionicons name="notifications" size={24} color="#0284c7" />
+            <TouchableOpacity className={`w-12 h-12 rounded-full ${isDark ? 'bg-primary-900/30' : 'bg-primary-100'} items-center justify-center`}>
+              <Ionicons name="notifications-outline" size={24} color="#0284c7" />
             </TouchableOpacity>
           </View>
 
           {/* Stats Row */}
-          <View className="flex-row space-x-3">
-            <View className="flex-1 bg-gradient-to-br from-primary-50 to-primary-100 rounded-2xl p-4">
+          <View className="flex-row gap-3">
+            <View className={`flex-1 ${isDark ? 'bg-primary-900/20' : 'bg-primary-50'} rounded-2xl p-4 ${borderColor} border`}>
               <View className="flex-row items-center mb-1">
                 <Ionicons name="flame" size={20} color="#f97316" />
-                <Text className="ml-1 text-sm font-semibold text-gray-600">Streak</Text>
+                <Text className={`ml-1 text-sm font-semibold ${textSecondary}`}>Streak</Text>
               </View>
-              <Text className="text-3xl font-bold text-gray-900">{currentStreak}</Text>
-              <Text className="text-xs text-gray-600">days</Text>
+              <Text className={`text-3xl font-bold ${textColor}`}>{currentStreak}</Text>
+              <Text className={`text-xs ${textSecondary}`}>days</Text>
             </View>
 
-            <View className="flex-1 bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-2xl p-4">
+            <View className={`flex-1 ${isDark ? 'bg-secondary-900/20' : 'bg-secondary-50'} rounded-2xl p-4 ${borderColor} border`}>
               <View className="flex-row items-center mb-1">
                 <Ionicons name="star" size={20} color="#eab308" />
-                <Text className="ml-1 text-sm font-semibold text-gray-600">XP</Text>
+                <Text className={`ml-1 text-sm font-semibold ${textSecondary}`}>XP</Text>
               </View>
-              <Text className="text-3xl font-bold text-gray-900">{totalXp}</Text>
-              <Text className="text-xs text-gray-600">points</Text>
+              <Text className={`text-3xl font-bold ${textColor}`}>{totalXp}</Text>
+              <Text className={`text-xs ${textSecondary}`}>points</Text>
             </View>
 
-            <View className="flex-1 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-4">
+            <View className={`flex-1 ${isDark ? 'bg-green-900/20' : 'bg-green-50'} rounded-2xl p-4 ${borderColor} border`}>
               <View className="flex-row items-center mb-1">
                 <Ionicons name="checkmark-circle" size={20} color="#10b981" />
-                <Text className="ml-1 text-sm font-semibold text-gray-600">Sessions</Text>
+                <Text className={`ml-1 text-sm font-semibold ${textSecondary}`}>Sessions</Text>
               </View>
-              <Text className="text-3xl font-bold text-gray-900">{sessionsCompleted}</Text>
-              <Text className="text-xs text-gray-600">completed</Text>
+              <Text className={`text-3xl font-bold ${textColor}`}>{sessionsCompleted}</Text>
+              <Text className={`text-xs ${textSecondary}`}>completed</Text>
             </View>
           </View>
         </View>
 
         {/* Quick Actions */}
         <View className="px-6 py-4">
-          <Text className="text-lg font-bold text-gray-900 mb-3">Quick Actions</Text>
-          <View className="flex-row space-x-3">
+          <Text className={`text-lg font-bold ${textColor} mb-3`}>Quick Actions</Text>
+          <View className="flex-row gap-3">
             <TouchableOpacity
               onPress={() => router.push('/(tabs)/practice')}
               className="flex-1 bg-primary-600 rounded-2xl p-4 items-center"
+              style={{
+                shadowColor: '#0284c7',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+                elevation: 4,
+              }}
             >
               <View className="w-12 h-12 rounded-full bg-white/20 items-center justify-center mb-2">
                 <Ionicons name="mic" size={24} color="white" />
               </View>
-              <Text className="text-white font-semibold">Practice</Text>
+              <Text className="text-white font-semibold">Practice Now</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity className="flex-1 bg-secondary-600 rounded-2xl p-4 items-center">
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/marketplace')}
+              className="flex-1 bg-secondary-600 rounded-2xl p-4 items-center"
+              style={{
+                shadowColor: '#c026d3',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+                elevation: 4,
+              }}
+            >
               <View className="w-12 h-12 rounded-full bg-white/20 items-center justify-center mb-2">
-                <Ionicons name="videocam" size={24} color="white" />
+                <Ionicons name="cart" size={24} color="white" />
               </View>
-              <Text className="text-white font-semibold">Live Session</Text>
+              <Text className="text-white font-semibold">Explore</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -176,13 +207,13 @@ export default function HomeScreen() {
         {/* Recommended Sessions */}
         <View className="px-6 py-4 pb-8">
           <View className="flex-row items-center justify-between mb-3">
-            <Text className="text-lg font-bold text-gray-900">Recommended for You</Text>
-            <TouchableOpacity>
+            <Text className={`text-lg font-bold ${textColor}`}>Recommended for You</Text>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/marketplace')}>
               <Text className="text-primary-600 font-semibold">See All</Text>
             </TouchableOpacity>
           </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="space-x-4">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
             {[
               {
                 title: 'Travel Conversation',
@@ -208,7 +239,8 @@ export default function HomeScreen() {
             ].map((session, index) => (
               <TouchableOpacity
                 key={index}
-                className="bg-white rounded-2xl p-4 w-48 border border-gray-200"
+                onPress={() => router.push('/(tabs)/practice')}
+                className={`${cardColor} rounded-2xl p-4 w-48 border ${borderColor}`}
               >
                 <View
                   className="w-12 h-12 rounded-full items-center justify-center mb-3"
@@ -216,14 +248,14 @@ export default function HomeScreen() {
                 >
                   <Ionicons name={session.icon as any} size={24} color={session.color} />
                 </View>
-                <Text className="text-base font-bold text-gray-900 mb-1">{session.title}</Text>
-                <View className="flex-row items-center space-x-2">
-                  <View className="bg-gray-100 px-2 py-1 rounded-full">
-                    <Text className="text-xs text-gray-600">{session.level}</Text>
+                <Text className={`text-base font-bold ${textColor} mb-1`}>{session.title}</Text>
+                <View className="flex-row items-center gap-2">
+                  <View className={`${isDark ? 'bg-gray-700' : 'bg-gray-100'} px-2 py-1 rounded-full`}>
+                    <Text className={`text-xs ${textSecondary}`}>{session.level}</Text>
                   </View>
-                  <View className="flex-row items-center">
-                    <Ionicons name="time" size={12} color="#6b7280" />
-                    <Text className="text-xs text-gray-600 ml-1">{session.duration}</Text>
+                  <View className="flex-row items-center gap-1">
+                    <Ionicons name="time-outline" size={12} color={isDark ? '#9ca3af' : '#6b7280'} />
+                    <Text className={`text-xs ${textSecondary}`}>{session.duration}</Text>
                   </View>
                 </View>
               </TouchableOpacity>
