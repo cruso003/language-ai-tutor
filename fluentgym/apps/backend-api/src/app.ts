@@ -17,6 +17,7 @@ import { registerAvatarRoutes } from './routes/avatar';
 import { registerMarketplaceRoutes } from './routes/marketplace';
 import { registerProgressRoutes } from './routes/progress';
 import { registerCalendarRoutes } from './routes/calendar';
+import { authRoutes } from './routes/auth';
 import { skillPacksRoutes } from './routes/skill-packs';
 import { dailyPlanRoutes } from './routes/daily-plan';
 import { sessionStartRoutes } from './routes/session-start';
@@ -399,6 +400,9 @@ export async function buildApp(opts = {}) {
 
   // Register Calendar integration routes (Google Calendar)
   await registerCalendarRoutes(app);
+
+    // Register authentication routes
+    await app.register(authRoutes);
 
   // Register user routes (auth-driven operations)
   await registerUserRoutes(app);

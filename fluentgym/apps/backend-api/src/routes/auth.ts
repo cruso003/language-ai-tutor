@@ -4,6 +4,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { AuthService } from '../services/AuthService.js';
+import { authGuard } from '../plugins/auth';
 import { z } from 'zod';
 
 const registerSchema = z.object({
@@ -71,7 +72,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
   // Change password (authenticated)
   fastify.post('/auth/change-password', {
-    preHandler: [fastify.authenticate as any],
+    preHandler: [authGuard(fastify)],
   }, async (request, reply) => {
     const body = changePasswordSchema.parse(request.body);
     const userId = (request.user as any).userId;
@@ -82,7 +83,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
   // Enable 2FA
   fastify.post('/auth/enable-2fa', {
-    preHandler: [fastify.authenticate as any],
+    preHandler: [authGuard(fastify)],
   }, async (request, reply) => {
     const userId = (request.user as any).userId;
     const result = await authService.enable2FA(userId);
@@ -91,7 +92,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
   // Verify and activate 2FA
   fastify.post('/auth/verify-2fa', {
-    preHandler: [fastify.authenticate as any],
+    preHandler: [authGuard(fastify)],
   }, async (request, reply) => {
     const userId = (request.user as any).userId;
     const { code } = request.body as { code: string };
@@ -102,7 +103,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
   // Disable 2FA
   fastify.post('/auth/disable-2fa', {
-    preHandler: [fastify.authenticate as any],
+    preHandler: [authGuard(fastify)],
   }, async (request, reply) => {
     const userId = (request.user as any).userId;
     const { code } = request.body as { code: string };

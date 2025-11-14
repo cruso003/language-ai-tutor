@@ -1,0 +1,37 @@
+{
+  "$schema": "https://example.com/fluentgym/skill-pack.schema.json",
+  "id": "language-basic",
+  "name": "Language Basics",
+  "version": "0.1.0",
+  "type": "language",
+  "locales": ["es", "fr", "de", "it", "pt", "ja", "ko", "zh"],
+  "scenarios": [
+    {
+      "id": "cafe-order-beginner",
+      "title": "Order Coffee at a Café",
+      "description": "Practice ordering a drink; handle size and payment.",
+      "difficulty": "beginner",
+      "objectives": [
+        "Greet the barista",
+        "Order a specific drink",
+        "Ask about sizes and prices",
+        "Confirm the order"
+      ],
+      "estimatedMinutes": 5,
+      "vocabulary": ["hello", "coffee", "please", "thank you", "how much", "size"],
+      "culturalNotes": [
+        "Tipping culture varies by country.",
+        "Sizes may have different names regionally."
+      ]
+    }
+  ],
+  "evaluation": {
+    "metrics": [
+      { "key": "responseLatencyAvg", "type": "number", "weight": 0.25 },
+      { "key": "hesitationCount", "type": "number", "weight": 0.15 },
+      { "key": "vocabularyVariety", "type": "number", "weight": 0.25 },
+      { "key": "fluencyScore", "type": "number", "weight": 0.35 }
+    ],
+    "summaryTemplate": "Provide strengths, improvements, next steps; keep feedback under 120 words."
+  }
+}
