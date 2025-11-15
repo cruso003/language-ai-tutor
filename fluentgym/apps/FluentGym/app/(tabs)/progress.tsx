@@ -1,17 +1,36 @@
+/**
+ * Progress Screen
+ *
+ * Displays comprehensive user progress with REAL metrics (no fake data)
+ * Shows session history, fluency trends, skill breakdown, and milestones
+ */
+
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useTheme } from '../../src/contexts/ThemeContext';
-import { Card, CardHeader, CardContent } from '../../src/components/ui/Card';
-import { apiClient } from '../../src/api/client';
+import { Card } from '../../src/components/ui/Card';
+import { StatsCard } from '../../src/components/StatsCard';
+import { ProgressChart } from '../../src/components/ProgressChart';
+import { SkillsBreakdown } from '../../src/components/SkillsBreakdown';
+import { MilestoneCard } from '../../src/components/MilestoneCard';
+import { useMetricsTracking } from '../../src/hooks/useMetricsTracking';
+import { getStreakMessage, formatPracticeTime } from '../../src/types/metrics';
 
 export default function ProgressScreen() {
   const { user } = useAuth();
   const { isDark } = useTheme();
-  const [progress, setProgress] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  const {
+    userProgress,
+    dailyStats,
+    isLoading,
+    getRecentDailyStats,
+    reload,
+  } = useMetricsTracking(user?.id || 'guest');
 
   const bgColor = isDark ? 'bg-dark-bg' : 'bg-gray-50';
   const cardColor = isDark ? 'bg-dark-card' : 'bg-white';
@@ -19,50 +38,55 @@ export default function ProgressScreen() {
   const textSecondary = isDark ? 'text-gray-400' : 'text-gray-600';
 
   useEffect(() => {
-    loadProgress();
+    reload();
   }, []);
 
-  const loadProgress = async () => {
-    try {
-      const data = await apiClient.getProgress(user?.id || '');
-      setProgress(data);
-    } catch (error) {
-      console.error('Failed to load progress:', error);
-    } finally {
-      setRefreshing(false);
-    }
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await reload();
+    setRefreshing(false);
   };
 
-  const stats = [
-    {
-      label: 'Total XP',
-      value: progress?.totalXp || 0,
-      icon: 'star',
-      color: '#fbbf24',
-      bgColor: isDark ? 'rgba(251, 191, 36, 0.1)' : '#fef3c7',
-    },
-    {
-      label: 'Sessions',
-      value: progress?.sessionsCompleted || 0,
-      icon: 'checkmark-circle',
-      color: '#10b981',
-      bgColor: isDark ? 'rgba(16, 185, 129, 0.1)' : '#d1fae5',
-    },
-    {
-      label: 'Current Streak',
-      value: progress?.currentStreak || 0,
-      icon: 'flame',
-      color: '#f97316',
-      bgColor: isDark ? 'rgba(249, 115, 22, 0.1)' : '#fed7aa',
-    },
-    {
-      label: 'Longest Streak',
-      value: progress?.longestStreak || 0,
-      icon: 'trophy',
-      color: '#8b5cf6',
-      bgColor: isDark ? 'rgba(139, 92, 246, 0.1)' : '#ede9fe',
-    },
-  ];
+  const recentStats = getRecentDailyStats(7);
+
+  // Show loading state
+  if (isLoading || !userProgress) {
+    return (
+      <SafeAreaView className={`flex-1 ${bgColor}`} edges={['top']}>
+        <View className="flex-1 items-center justify-center">
+          <Ionicons
+            name="stats-chart"
+            size={64}
+            color={isDark ? '#4b5563' : '#d1d5db'}
+          />
+          <Text className={`text-lg ${textSecondary} mt-4`}>
+            Loading your progress...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Show empty state if no sessions yet
+  if (userProgress.totalSessions === 0) {
+    return (
+      <SafeAreaView className={`flex-1 ${bgColor}`} edges={['top']}>
+        <View className="flex-1 items-center justify-center px-8">
+          <Ionicons
+            name="rocket-outline"
+            size={80}
+            color={isDark ? '#4b5563' : '#d1d5db'}
+          />
+          <Text className={`text-2xl font-bold ${textColor} mt-6 text-center`}>
+            Ready to Start?
+          </Text>
+          <Text className={`text-base ${textSecondary} mt-2 text-center`}>
+            Complete your first practice session to see your progress here!
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className={`flex-1 ${bgColor}`} edges={['top']}>
@@ -71,96 +95,178 @@ export default function ProgressScreen() {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={loadProgress}
+            onRefresh={handleRefresh}
             tintColor={isDark ? '#ffffff' : '#0284c7'}
           />
         }
       >
         {/* Header */}
         <View className={`${cardColor} px-6 py-6 mb-4`}>
-          <Text className={`text-3xl font-bold ${textColor} mb-2`}>Your Progress</Text>
+          <Text className={`text-3xl font-bold ${textColor} mb-2`}>
+            Your Progress
+          </Text>
           <Text className={`text-base ${textSecondary}`}>
-            Track your learning journey and achievements
+            {getStreakMessage(userProgress.currentStreak)}
           </Text>
         </View>
 
-        {/* Stats Grid */}
+        {/* Key Stats */}
         <View className="px-6 mb-4">
-          <View className="flex-row flex-wrap gap-3">
-            {stats.map((stat, index) => (
-              <View key={index} style={{ width: '48%' }}>
-                <Card>
-                  <View
-                    className="w-12 h-12 rounded-full items-center justify-center mb-3"
-                    style={{ backgroundColor: stat.bgColor }}
-                  >
-                    <Ionicons name={stat.icon as any} size={24} color={stat.color} />
-                  </View>
-                  <Text className={`text-3xl font-bold ${textColor} mb-1`}>{stat.value}</Text>
-                  <Text className={`text-sm ${textSecondary}`}>{stat.label}</Text>
-                </Card>
-              </View>
-            ))}
+          <View style={styles.statsGrid}>
+            <View style={styles.statHalf}>
+              <StatsCard
+                icon="calendar"
+                iconColor="#10b981"
+                label="Total Sessions"
+                value={userProgress.totalSessions}
+                subtitle="practice sessions"
+                isDark={isDark}
+              />
+            </View>
+            <View style={styles.statHalf}>
+              <StatsCard
+                icon="time"
+                iconColor="#0284c7"
+                label="Practice Time"
+                value={formatPracticeTime(userProgress.totalPracticeTime)}
+                subtitle="total time"
+                isDark={isDark}
+              />
+            </View>
+          </View>
+
+          <View style={styles.statsGrid}>
+            <View style={styles.statHalf}>
+              <StatsCard
+                icon="flame"
+                iconColor="#f97316"
+                label="Current Streak"
+                value={`${userProgress.currentStreak} days`}
+                subtitle={`Best: ${userProgress.longestStreak}`}
+                isDark={isDark}
+              />
+            </View>
+            <View style={styles.statHalf}>
+              <StatsCard
+                icon="chatbubbles"
+                iconColor="#8b5cf6"
+                label="Messages"
+                value={userProgress.totalMessages}
+                subtitle="sent in Spanish"
+                isDark={isDark}
+              />
+            </View>
           </View>
         </View>
 
-        {/* Weekly Activity */}
+        {/* Practice Time Chart */}
         <View className="px-6 mb-4">
-          <Card>
-            <CardHeader title="Weekly Activity" subtitle="Last 7 days" />
-            <CardContent>
-              <View className="flex-row justify-between items-end h-32">
-                {[65, 80, 45, 90, 70, 55, 85].map((height, index) => (
-                  <View key={index} className="items-center flex-1">
-                    <View
-                      className="bg-primary-600 rounded-t-lg w-8"
-                      style={{ height: `${height}%` }}
-                    />
-                    <Text className={`text-xs ${textSecondary} mt-2`}>
-                      {['M', 'T', 'W', 'T', 'F', 'S', 'S'][index]}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </CardContent>
-          </Card>
+          <View className={`${cardColor}`} style={styles.chartCard}>
+            <ProgressChart
+              dailyStats={recentStats}
+              metric="practiceTime"
+              title="Practice Time (Last 7 Days)"
+              isDark={isDark}
+            />
+          </View>
         </View>
 
-        {/* Achievements */}
-        <View className="px-6 pb-8">
-          <Card>
-            <CardHeader title="Recent Achievements" subtitle="Keep up the great work!" />
-            <CardContent>
-              {[
-                { title: '7-Day Streak', icon: 'flame', color: '#f97316', xp: 100 },
-                { title: 'First Session', icon: 'trophy', color: '#fbbf24', xp: 50 },
-                { title: 'Early Bird', icon: 'sunny', color: '#eab308', xp: 75 },
-              ].map((achievement, index) => (
-                <View
-                  key={index}
-                  className={`flex-row items-center py-3 border-b ${
-                    isDark ? 'border-gray-700' : 'border-gray-100'
-                  } last:border-b-0`}
-                >
-                  <View
-                    className="w-12 h-12 rounded-full items-center justify-center mr-3"
-                    style={{ backgroundColor: `${achievement.color}${isDark ? '33' : '20'}` }}
-                  >
-                    <Ionicons name={achievement.icon as any} size={24} color={achievement.color} />
-                  </View>
-                  <View className="flex-1">
-                    <Text className={`text-base font-bold ${textColor}`}>
-                      {achievement.title}
+        {/* Fluency Score Chart */}
+        <View className="px-6 mb-4">
+          <View className={`${cardColor}`} style={styles.chartCard}>
+            <ProgressChart
+              dailyStats={recentStats}
+              metric="fluencyScore"
+              title="Fluency Score Trend"
+              isDark={isDark}
+            />
+          </View>
+        </View>
+
+        {/* Skills Breakdown */}
+        <View className="px-6 mb-4">
+          <SkillsBreakdown skillProgress={userProgress.skillProgress} isDark={isDark} />
+        </View>
+
+        {/* Scenarios Completed */}
+        {Object.keys(userProgress.scenariosCompleted).length > 0 && (
+          <View className="px-6 mb-4">
+            <View className={`${cardColor}`} style={styles.card}>
+              <Text className={`text-lg font-bold ${textColor} mb-4`}>
+                Scenarios Completed
+              </Text>
+              {Object.entries(userProgress.scenariosCompleted).map(
+                ([scenarioId, count]) => (
+                  <View key={scenarioId} style={styles.scenarioRow}>
+                    <Ionicons name="checkmark-circle" size={20} color="#10b981" />
+                    <Text className={`flex-1 ${textColor} ml-2`}>
+                      {scenarioId}
                     </Text>
-                    <Text className={`text-sm ${textSecondary}`}>+{achievement.xp} XP</Text>
+                    <Text className={`${textSecondary} font-semibold`}>
+                      {count}x
+                    </Text>
                   </View>
-                  <Ionicons name="checkmark-circle" size={24} color="#10b981" />
-                </View>
-              ))}
-            </CardContent>
-          </Card>
+                )
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* Milestones */}
+        <View className="px-6 mb-4">
+          <Text className={`text-xl font-bold ${textColor} mb-3`}>
+            Milestones
+          </Text>
+          {userProgress.milestones.map((milestone) => (
+            <View key={milestone.id} style={styles.milestoneContainer}>
+              <MilestoneCard milestone={milestone} isDark={isDark} />
+            </View>
+          ))}
+        </View>
+
+        {/* Join Date */}
+        <View className="px-6 pb-8">
+          <Text className={`text-sm ${textSecondary} text-center`}>
+            Member since {userProgress.joinedAt.toLocaleDateString()}
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  statsGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  statHalf: {
+    flex: 1,
+  },
+  chartCard: {
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  card: {
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  scenarioRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  milestoneContainer: {
+    marginBottom: 12,
+  },
+});

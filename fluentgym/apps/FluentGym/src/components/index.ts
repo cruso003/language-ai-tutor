@@ -27,6 +27,12 @@ export { ScenarioProgress } from './ScenarioProgress';
 export { CorrectionCard } from './CorrectionCard';
 export { CorrectionsPanel } from './CorrectionsPanel';
 
+// Metrics and Progress
+export { StatsCard } from './StatsCard';
+export { ProgressChart } from './ProgressChart';
+export { SkillsBreakdown } from './SkillsBreakdown';
+export { MilestoneCard } from './MilestoneCard';
+
 // UI Components
 export { Button } from './ui/Button';
 export { Card } from './ui/Card';
