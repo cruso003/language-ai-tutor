@@ -16,6 +16,7 @@ interface FluencyGateProps {
   onTimeout: () => void;
   onTimeUpdate?: (timeRemaining: number) => void;
   onResponseStart?: (elapsedTime: number) => void;
+  isDark?: boolean;
 }
 
 export const FluencyGate: React.FC<FluencyGateProps> = ({
@@ -24,6 +25,7 @@ export const FluencyGate: React.FC<FluencyGateProps> = ({
   onTimeout,
   onTimeUpdate,
   onResponseStart,
+  isDark = false,
 }) => {
   const [timeRemaining, setTimeRemaining] = useState(maxTime);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -31,6 +33,10 @@ export const FluencyGate: React.FC<FluencyGateProps> = ({
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const intervalRef = useRef<NodeJS.Timeout>();
   const startTimeRef = useRef<number>();
+
+  // Dark mode colors
+  const trackBg = isDark ? '#374151' : '#e5e7eb';
+  const textSecondary = isDark ? '#9ca3af' : '#6b7280';
 
   useEffect(() => {
     if (isActive) {
@@ -136,7 +142,7 @@ export const FluencyGate: React.FC<FluencyGateProps> = ({
   return (
     <View style={styles.container}>
       {/* Progress Bar */}
-      <View style={styles.progressBarContainer}>
+      <View style={[styles.progressBarContainer, { backgroundColor: trackBg }]}>
         <Animated.View
           style={[
             styles.progressBar,
@@ -161,7 +167,7 @@ export const FluencyGate: React.FC<FluencyGateProps> = ({
         <Text style={[styles.timerText, { color: getTimerColor() }]}>
           {timeRemaining.toFixed(1)}s
         </Text>
-        <Text style={styles.timerLabel}>Time to respond</Text>
+        <Text style={[styles.timerLabel, { color: textSecondary }]}>Time to respond</Text>
       </Animated.View>
 
       {/* Pressure Message */}
@@ -180,7 +186,6 @@ const styles = StyleSheet.create({
   },
   progressBarContainer: {
     height: 6,
-    backgroundColor: '#e5e7eb',
     borderRadius: 3,
     overflow: 'hidden',
     marginBottom: 12,
@@ -200,7 +205,6 @@ const styles = StyleSheet.create({
   },
   timerLabel: {
     fontSize: 14,
-    color: '#6b7280',
     marginTop: 4,
   },
   urgentBanner: {

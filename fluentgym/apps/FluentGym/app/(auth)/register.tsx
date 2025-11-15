@@ -7,10 +7,12 @@ import {
   Platform,
   Alert,
   TouchableOpacity,
+  StyleSheet,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { useTheme } from '../../src/contexts/ThemeContext';
 import { Button } from '../../src/components/ui/Button';
 import { Input } from '../../src/components/ui/Input';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function RegisterScreen() {
   const router = useRouter();
   const { register } = useAuth();
+  const { isDark } = useTheme();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,6 +32,12 @@ export default function RegisterScreen() {
     password?: string;
     confirmPassword?: string;
   }>({});
+
+  const bgColor = isDark ? '#111827' : '#ffffff';
+  const textColor = isDark ? '#f9fafb' : '#111827';
+  const textSecondary = isDark ? '#9ca3af' : '#6b7280';
+  const backButtonBg = isDark ? '#1f2937' : '#f3f4f6';
+  const backButtonIcon = isDark ? '#f9fafb' : '#374151';
 
   const validateForm = () => {
     const newErrors: any = {};
@@ -87,98 +96,110 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: bgColor }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
+        style={styles.keyboardView}
       >
         <ScrollView
-          contentContainerClassName="flex-grow"
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
-          className="flex-1"
         >
-          <View className="flex-1 px-6 pt-8">
+          <View style={styles.container}>
             {/* Back Button */}
             <TouchableOpacity
               onPress={() => router.back()}
-              className="mb-6 w-10 h-10 rounded-full bg-gray-100 items-center justify-center"
+              style={[styles.backButton, { backgroundColor: backButtonBg }]}
             >
-              <Ionicons name="arrow-back" size={20} color="#374151" />
+              <Ionicons name="arrow-back" size={20} color={backButtonIcon} />
             </TouchableOpacity>
 
             {/* Header */}
-            <View className="mb-6">
-              <Text className="text-4xl font-bold text-gray-900 mb-2">Create Account</Text>
-              <Text className="text-lg text-gray-600">
-                Join FluentAI to start your learning journey
+            <View style={styles.header}>
+              <Text style={[styles.title, { color: textColor }]}>
+                Create Account
+              </Text>
+              <Text style={[styles.subtitle, { color: textSecondary }]}>
+                Join FluentGym to start your learning journey
               </Text>
             </View>
 
             {/* Form */}
-            <View className="mb-6">
-              <Input
-                label="Full Name"
-                value={displayName}
-                onChangeText={setDisplayName}
-                placeholder="John Doe"
-                error={errors.displayName}
-                leftIcon={<Ionicons name="person" size={20} color="#6b7280" />}
-              />
+            <View style={styles.form}>
+              <View style={styles.inputWrapper}>
+                <Input
+                  label="Full Name"
+                  value={displayName}
+                  onChangeText={setDisplayName}
+                  placeholder="John Doe"
+                  error={errors.displayName}
+                  leftIcon={<Ionicons name="person" size={20} color={textSecondary} />}
+                />
+              </View>
 
-              <Input
-                label="Email"
-                value={email}
-                onChangeText={setEmail}
-                placeholder="your@email.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                error={errors.email}
-                leftIcon={<Ionicons name="mail" size={20} color="#6b7280" />}
-              />
+              <View style={styles.inputWrapper}>
+                <Input
+                  label="Email"
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="your@email.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  error={errors.email}
+                  leftIcon={<Ionicons name="mail" size={20} color={textSecondary} />}
+                />
+              </View>
 
-              <Input
-                label="Password"
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Create a strong password"
-                secureTextEntry
-                error={errors.password}
-                leftIcon={<Ionicons name="lock-closed" size={20} color="#6b7280" />}
-              />
+              <View style={styles.inputWrapper}>
+                <Input
+                  label="Password"
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Create a strong password"
+                  secureTextEntry
+                  error={errors.password}
+                  leftIcon={<Ionicons name="lock-closed" size={20} color={textSecondary} />}
+                />
+              </View>
 
-              <Input
-                label="Confirm Password"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                placeholder="Re-enter your password"
-                secureTextEntry
-                error={errors.confirmPassword}
-                leftIcon={<Ionicons name="lock-closed" size={20} color="#6b7280" />}
-              />
+              <View style={styles.inputWrapper}>
+                <Input
+                  label="Confirm Password"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder="Re-enter your password"
+                  secureTextEntry
+                  error={errors.confirmPassword}
+                  leftIcon={<Ionicons name="lock-closed" size={20} color={textSecondary} />}
+                />
+              </View>
 
-              <Button
-                onPress={handleRegister}
-                loading={isLoading}
-                fullWidth
-                size="lg"
-                className="mb-4 mt-2"
-              >
-                Create Account
-              </Button>
+              <View style={styles.buttonWrapper}>
+                <Button
+                  onPress={handleRegister}
+                  loading={isLoading}
+                  fullWidth
+                  size="lg"
+                >
+                  Create Account
+                </Button>
+              </View>
 
-              <View className="flex-row items-center justify-center">
-                <Text className="text-gray-600">Already have an account? </Text>
+              <View style={styles.signInRow}>
+                <Text style={[styles.signInText, { color: textSecondary }]}>
+                  Already have an account?{' '}
+                </Text>
                 <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-                  <Text className="text-primary-600 font-bold">Sign In</Text>
+                  <Text style={styles.signInLink}>Sign In</Text>
                 </TouchableOpacity>
               </View>
             </View>
 
             {/* Terms */}
-            <Text className="text-sm text-gray-500 text-center px-4">
+            <Text style={[styles.termsText, { color: textSecondary }]}>
               By creating an account, you agree to our{' '}
-              <Text className="text-primary-600">Terms of Service</Text> and{' '}
-              <Text className="text-primary-600">Privacy Policy</Text>
+              <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
+              <Text style={styles.termsLink}>Privacy Policy</Text>
             </Text>
           </View>
         </ScrollView>
@@ -186,3 +207,70 @@ export default function RegisterScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  header: {
+    marginBottom: 24,
+  },
+  title: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 18,
+  },
+  form: {
+    marginBottom: 24,
+  },
+  inputWrapper: {
+    marginBottom: 16,
+  },
+  buttonWrapper: {
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  signInRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signInText: {
+    fontSize: 14,
+  },
+  signInLink: {
+    color: '#0284c7',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  termsText: {
+    fontSize: 12,
+    textAlign: 'center',
+    paddingHorizontal: 16,
+  },
+  termsLink: {
+    color: '#0284c7',
+  },
+});

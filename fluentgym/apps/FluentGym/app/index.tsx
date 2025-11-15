@@ -2,10 +2,12 @@ import { useEffect } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../src/contexts/AuthContext';
+import { useTheme } from '../src/contexts/ThemeContext';
 
 export default function IndexScreen() {
   const router = useRouter();
   const { isAuthenticated, isLoading, profile } = useAuth();
+  const { isDark } = useTheme();
 
   useEffect(() => {
     if (!isLoading) {
@@ -22,10 +24,28 @@ export default function IndexScreen() {
     }
   }, [isLoading, isAuthenticated, profile]);
 
+  const bgColor = isDark ? '#111827' : '#f9fafb';
+  const textColor = isDark ? '#f9fafb' : '#111827';
+
   return (
-    <View className="flex-1 justify-center items-center bg-gradient-to-br from-primary-50 to-secondary-50">
+    <View
+      style={{
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: bgColor,
+      }}
+    >
       <ActivityIndicator size="large" color="#0284c7" />
-      <Text className="mt-4 text-base text-gray-600">Loading FluentAI...</Text>
+      <Text
+        style={{
+          marginTop: 16,
+          fontSize: 16,
+          color: textColor,
+        }}
+      >
+        Loading FluentGym...
+      </Text>
     </View>
   );
 }
