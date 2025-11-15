@@ -18,7 +18,10 @@ import { Button } from '../../src/components/ui/Button';
 import { Card } from '../../src/components/ui/Card';
 import { TutorSelector } from '../../src/components/TutorSelector';
 import { TutorAvatar } from '../../src/components/TutorAvatar';
+import { FluencyGate } from '../../src/components/FluencyGate';
+import { FluencyMetrics } from '../../src/components/FluencyMetrics';
 import { getDefaultTutor, getTutorById, type Tutor } from '../../src/config/tutors';
+import { useFluencyTracking } from '../../src/hooks/useFluencyTracking';
 import { apiClient } from '../../src/api/client';
 
 interface Message {
@@ -39,7 +42,13 @@ export default function PracticeScreen() {
   const [selectedTutor, setSelectedTutor] = useState<Tutor>(getDefaultTutor());
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [sessionId, setSessionId] = useState<string>('');
+  const [isFluencyGateActive, setIsFluencyGateActive] = useState(false);
+  const [showMetrics, setShowMetrics] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
+  const responseStartTimeRef = useRef<number>();
+
+  // Fluency tracking
+  const { recordResponse, getSessionMetrics } = useFluencyTracking();
 
   const bgColor = isDark ? 'bg-dark-bg' : 'bg-gray-50';
   const cardColor = isDark ? 'bg-dark-card' : 'bg-white';
@@ -74,10 +83,27 @@ export default function PracticeScreen() {
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, newMessage]);
+
+    // Activate Fluency Gate after assistant message
+    if (role === 'assistant') {
+      responseStartTimeRef.current = Date.now();
+      setIsFluencyGateActive(true);
+    }
   };
 
   const handleSendMessage = async () => {
     if (!inputText.trim() || !sessionId) return;
+
+    // Stop Fluency Gate and record response time
+    setIsFluencyGateActive(false);
+    const responseTime = responseStartTimeRef.current
+      ? (Date.now() - responseStartTimeRef.current) / 1000
+      : 0;
+
+    if (responseTime > 0) {
+      const metrics = recordResponse(responseTime);
+      console.log(`Response time: ${responseTime.toFixed(2)}s - ${metrics.rating}`);
+    }
 
     const userMessage = inputText.trim();
     setInputText('');
@@ -170,6 +196,37 @@ export default function PracticeScreen() {
     }
   };
 
+  // Fluency Gate handlers
+  const handleFluencyTimeout = () => {
+    console.log('⚠️ Response timeout! Too slow.');
+    setIsFluencyGateActive(false);
+
+    // Record timeout as slow response (4 seconds)
+    if (responseStartTimeRef.current) {
+      const responseTime = (Date.now() - responseStartTimeRef.current) / 1000;
+      recordResponse(responseTime);
+    }
+
+    Alert.alert(
+      'Too Slow!',
+      'Try to respond faster next time. Thinking in your target language gets easier with practice!',
+      [{ text: 'Got it', style: 'default' }]
+    );
+  };
+
+  const handleResponseStart = (elapsedTime: number) => {
+    console.log(`User started responding after ${elapsedTime.toFixed(2)}s`);
+  };
+
+  const handleInputFocus = () => {
+    // Stop timer when user starts typing
+    if (isFluencyGateActive && responseStartTimeRef.current) {
+      const responseTime = (Date.now() - responseStartTimeRef.current) / 1000;
+      recordResponse(responseTime);
+      setIsFluencyGateActive(false);
+    }
+  };
+
   return (
     <SafeAreaView className={`flex-1 ${bgColor}`} edges={['top']}>
       <KeyboardAvoidingView
@@ -186,7 +243,46 @@ export default function PracticeScreen() {
             onSelectTutor={setSelectedTutor}
             isDark={isDark}
           />
+
+          {/* Fluency Metrics Toggle */}
+          {getSessionMetrics().totalResponses > 0 && (
+            <TouchableOpacity
+              onPress={() => setShowMetrics(!showMetrics)}
+              className="mt-3 flex-row items-center justify-between"
+            >
+              <View className="flex-row items-center gap-2">
+                <Ionicons name="stats-chart" size={16} color={isDark ? '#9ca3af' : '#6b7280'} />
+                <Text className={`text-sm font-medium ${textSecondary}`}>
+                  Session Metrics
+                </Text>
+              </View>
+              <Ionicons
+                name={showMetrics ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color={isDark ? '#9ca3af' : '#6b7280'}
+              />
+            </TouchableOpacity>
+          )}
         </View>
+
+        {/* Fluency Metrics Display */}
+        {showMetrics && getSessionMetrics().totalResponses > 0 && (
+          <View className="px-6 py-4">
+            <FluencyMetrics
+              metrics={getSessionMetrics()}
+              isDark={isDark}
+              compact={false}
+            />
+          </View>
+        )}
+
+        {/* Fluency Gate Timer */}
+        <FluencyGate
+          isActive={isFluencyGateActive}
+          maxTime={3}
+          onTimeout={handleFluencyTimeout}
+          onResponseStart={handleResponseStart}
+        />
 
         {/* Messages */}
         <ScrollView
@@ -284,6 +380,7 @@ export default function PracticeScreen() {
               <TextInput
                 value={inputText}
                 onChangeText={setInputText}
+                onFocus={handleInputFocus}
                 placeholder="Type a message..."
                 placeholderTextColor={isDark ? '#6b7280' : '#9ca3af'}
                 className={`flex-1 text-base ${textColor}`}

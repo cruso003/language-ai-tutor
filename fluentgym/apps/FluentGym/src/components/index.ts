@@ -13,6 +13,11 @@ export { AvatarDisplay } from './AvatarDisplay';
 export { TutorAvatar } from './TutorAvatar';
 export { TutorSelector } from './TutorSelector';
 
+// Fluency System
+export { FluencyGate } from './FluencyGate';
+export { FluencyMetrics } from './FluencyMetrics';
+export type { SessionMetrics } from './FluencyMetrics';
+
 // UI Components
 export { Button } from './ui/Button';
 export { Card } from './ui/Card';
