@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Audio } from 'expo-av';
+import { useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { Button } from '../../src/components/ui/Button';
@@ -20,7 +21,9 @@ import { TutorSelector } from '../../src/components/TutorSelector';
 import { TutorAvatar } from '../../src/components/TutorAvatar';
 import { FluencyGate } from '../../src/components/FluencyGate';
 import { FluencyMetrics } from '../../src/components/FluencyMetrics';
+import { ScenarioProgress } from '../../src/components/ScenarioProgress';
 import { getDefaultTutor, getTutorById, type Tutor } from '../../src/config/tutors';
+import { getScenarioById, type Scenario } from '../../src/config/scenarios';
 import { useFluencyTracking } from '../../src/hooks/useFluencyTracking';
 import { apiClient } from '../../src/api/client';
 
@@ -35,6 +38,8 @@ interface Message {
 export default function PracticeScreen() {
   const { user } = useAuth();
   const { isDark } = useTheme();
+  const params = useLocalSearchParams<{ scenarioId?: string }>();
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
@@ -44,8 +49,15 @@ export default function PracticeScreen() {
   const [sessionId, setSessionId] = useState<string>('');
   const [isFluencyGateActive, setIsFluencyGateActive] = useState(false);
   const [showMetrics, setShowMetrics] = useState(false);
+  const [showScenarioProgress, setShowScenarioProgress] = useState(true);
+  const [completedObjectives, setCompletedObjectives] = useState<string[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
   const responseStartTimeRef = useRef<number>();
+
+  // Load scenario if scenarioId param provided
+  const activeScenario: Scenario | undefined = params.scenarioId
+    ? getScenarioById(params.scenarioId)
+    : undefined;
 
   // Fluency tracking
   const { recordResponse, getSessionMetrics } = useFluencyTracking();
@@ -66,9 +78,23 @@ export default function PracticeScreen() {
       const session = await apiClient.createSession('default-skill-pack');
       setSessionId(session.id);
 
-      // Get initial greeting
-      const response = await apiClient.startSession('default-skill-pack', undefined, selectedTutor.personality);
-      addMessage('assistant', response.greeting);
+      // Get initial greeting (use scenario greeting if available)
+      const greeting = activeScenario
+        ? activeScenario.initialGreeting
+        : undefined;
+
+      if (greeting) {
+        // Use scenario's initial greeting directly
+        addMessage('assistant', greeting);
+      } else {
+        // Get AI-generated greeting
+        const response = await apiClient.startSession(
+          'default-skill-pack',
+          undefined,
+          selectedTutor.personality
+        );
+        addMessage('assistant', response.greeting);
+      }
     } catch (error) {
       console.error('Failed to initialize session:', error);
       Alert.alert('Error', 'Failed to start practice session. Please try again.');
@@ -227,6 +253,19 @@ export default function PracticeScreen() {
     }
   };
 
+  // Scenario handlers
+  const handleToggleObjective = (objectiveId: string) => {
+    setCompletedObjectives((prev) => {
+      if (prev.includes(objectiveId)) {
+        // Remove if already completed
+        return prev.filter((id) => id !== objectiveId);
+      } else {
+        // Add to completed
+        return [...prev, objectiveId];
+      }
+    });
+  };
+
   return (
     <SafeAreaView className={`flex-1 ${bgColor}`} edges={['top']}>
       <KeyboardAvoidingView
@@ -272,6 +311,20 @@ export default function PracticeScreen() {
               metrics={getSessionMetrics()}
               isDark={isDark}
               compact={false}
+            />
+          </View>
+        )}
+
+        {/* Scenario Progress */}
+        {activeScenario && (
+          <View className="px-6 py-4">
+            <ScenarioProgress
+              scenario={activeScenario}
+              completedObjectives={completedObjectives}
+              onToggleObjective={handleToggleObjective}
+              isDark={isDark}
+              isExpanded={showScenarioProgress}
+              onToggleExpand={() => setShowScenarioProgress(!showScenarioProgress)}
             />
           </View>
         )}

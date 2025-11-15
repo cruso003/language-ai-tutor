@@ -18,6 +18,11 @@ export { FluencyGate } from './FluencyGate';
 export { FluencyMetrics } from './FluencyMetrics';
 export type { SessionMetrics } from './FluencyMetrics';
 
+// Scenario System
+export { ScenarioCard } from './ScenarioCard';
+export { ScenarioSelector } from './ScenarioSelector';
+export { ScenarioProgress } from './ScenarioProgress';
+
 // UI Components
 export { Button } from './ui/Button';
 export { Card } from './ui/Card';

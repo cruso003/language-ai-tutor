@@ -39,10 +39,16 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="scenarios"
+        options={{
+          title: 'Scenarios',
+          tabBarIcon: ({ color, size }) => <Ionicons name="compass" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="marketplace"
         options={{
-          title: 'Marketplace',
-          tabBarIcon: ({ color, size }) => <Ionicons name="storefront" size={size} color={color} />,
+          href: null, // Hide from tabs for MVP
         }}
       />
       <Tabs.Screen
