@@ -153,6 +153,11 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* Avatar Test - /avatar-test */}
+        <View className="px-6 py-4">
+          <Button onPress={() => router.push('/avatar-test')}>Avatar Test</Button>
+        </View>
+
         {/* Daily Quests */}
         <View className="px-6 py-4">
           <Card>
