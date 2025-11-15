@@ -16,6 +16,9 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { Button } from '../../src/components/ui/Button';
 import { Card } from '../../src/components/ui/Card';
+import { TutorSelector } from '../../src/components/TutorSelector';
+import { TutorAvatar } from '../../src/components/TutorAvatar';
+import { getDefaultTutor, getTutorById, type Tutor } from '../../src/config/tutors';
 import { apiClient } from '../../src/api/client';
 
 interface Message {
@@ -33,7 +36,7 @@ export default function PracticeScreen() {
   const [inputText, setInputText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedPersonality, setSelectedPersonality] = useState('encouraging-mentor');
+  const [selectedTutor, setSelectedTutor] = useState<Tutor>(getDefaultTutor());
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [sessionId, setSessionId] = useState<string>('');
   const scrollViewRef = useRef<ScrollView>(null);
@@ -45,13 +48,6 @@ export default function PracticeScreen() {
   const borderColor = isDark ? 'border-gray-700' : 'border-gray-200';
   const inputBg = isDark ? 'bg-gray-800' : 'bg-gray-100';
 
-  const personalities = [
-    { id: 'encouraging-mentor', name: 'Mentor', icon: 'school-outline', color: '#3b82f6' },
-    { id: 'friendly-peer', name: 'Friend', icon: 'people-outline', color: '#10b981' },
-    { id: 'professional-coach', name: 'Coach', icon: 'briefcase-outline', color: '#8b5cf6' },
-    { id: 'cultural-expert', name: 'Expert', icon: 'globe-outline', color: '#f59e0b' },
-  ];
-
   useEffect(() => {
     initializeSession();
   }, []);
@@ -62,7 +58,7 @@ export default function PracticeScreen() {
       setSessionId(session.id);
 
       // Get initial greeting
-      const response = await apiClient.startSession('default-skill-pack', undefined, selectedPersonality);
+      const response = await apiClient.startSession('default-skill-pack', undefined, selectedTutor.personality);
       addMessage('assistant', response.greeting);
     } catch (error) {
       console.error('Failed to initialize session:', error);
@@ -90,7 +86,7 @@ export default function PracticeScreen() {
 
     try {
       // FIX: Include userId in the request
-      const response = await apiClient.sendMessage(sessionId, userMessage, selectedPersonality);
+      const response = await apiClient.sendMessage(sessionId, userMessage, selectedTutor.personality);
       addMessage('assistant', response.response);
 
       // Optionally play audio response
@@ -147,7 +143,7 @@ export default function PracticeScreen() {
         const response = await apiClient.sendMessage(
           sessionId,
           transcription.transcript,
-          selectedPersonality
+          selectedTutor.personality
         );
         addMessage('assistant', response.response);
 
@@ -184,43 +180,12 @@ export default function PracticeScreen() {
         <View className={`${cardColor} px-6 py-4 border-b ${borderColor}`}>
           <Text className={`text-2xl font-bold ${textColor} mb-3`}>Practice Session</Text>
 
-          {/* Personality Selection */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 8 }}
-          >
-            {personalities.map((personality) => (
-              <TouchableOpacity
-                key={personality.id}
-                onPress={() => setSelectedPersonality(personality.id)}
-                className={`px-4 py-2.5 rounded-full flex-row items-center gap-2 ${
-                  selectedPersonality === personality.id
-                    ? 'bg-primary-600'
-                    : isDark
-                    ? 'bg-gray-800'
-                    : 'bg-gray-100'
-                }`}
-              >
-                <Ionicons
-                  name={personality.icon as any}
-                  size={16}
-                  color={selectedPersonality === personality.id ? 'white' : personality.color}
-                />
-                <Text
-                  className={`font-semibold ${
-                    selectedPersonality === personality.id
-                      ? 'text-white'
-                      : isDark
-                      ? 'text-gray-300'
-                      : 'text-gray-700'
-                  }`}
-                >
-                  {personality.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          {/* Tutor Selection */}
+          <TutorSelector
+            selectedTutorId={selectedTutor.id}
+            onSelectTutor={setSelectedTutor}
+            isDark={isDark}
+          />
         </View>
 
         {/* Messages */}
@@ -247,44 +212,51 @@ export default function PracticeScreen() {
               key={message.id}
               className={`mb-4 ${message.role === 'user' ? 'items-end' : 'items-start'}`}
             >
-              <View
-                className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                  message.role === 'user'
-                    ? 'bg-primary-600'
-                    : isDark
-                    ? 'bg-gray-800 border border-gray-700'
-                    : 'bg-white border border-gray-200'
-                }`}
-                style={
-                  message.role === 'user'
-                    ? {
-                        shadowColor: '#0284c7',
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.1,
-                        shadowRadius: 4,
-                        elevation: 2,
-                      }
-                    : undefined
-                }
-              >
-                <Text
-                  className={`text-base ${
-                    message.role === 'user'
-                      ? 'text-white'
-                      : isDark
-                      ? 'text-dark-text'
-                      : 'text-gray-900'
-                  }`}
-                >
-                  {message.content}
-                </Text>
+              <View className={`flex-row gap-2 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                {message.role === 'assistant' && (
+                  <TutorAvatar tutor={selectedTutor} size="small" />
+                )}
+                <View>
+                  <View
+                    className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                      message.role === 'user'
+                        ? 'bg-primary-600'
+                        : isDark
+                        ? 'bg-gray-800 border border-gray-700'
+                        : 'bg-white border border-gray-200'
+                    }`}
+                    style={
+                      message.role === 'user'
+                        ? {
+                            shadowColor: '#0284c7',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.1,
+                            shadowRadius: 4,
+                            elevation: 2,
+                          }
+                        : undefined
+                    }
+                  >
+                    <Text
+                      className={`text-base ${
+                        message.role === 'user'
+                          ? 'text-white'
+                          : isDark
+                          ? 'text-dark-text'
+                          : 'text-gray-900'
+                      }`}
+                    >
+                      {message.content}
+                    </Text>
+                  </View>
+                  <Text className={`text-xs ${textSecondary} mt-1 px-2`}>
+                    {message.timestamp.toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </Text>
+                </View>
               </View>
-              <Text className={`text-xs ${textSecondary} mt-1 px-2`}>
-                {message.timestamp.toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </Text>
             </View>
           ))}
 
