@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, TextInput, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { cn } from '../../utils/cn';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface InputProps {
   label?: string;
@@ -36,21 +37,32 @@ export function Input({
   leftIcon,
   rightIcon,
 }: InputProps) {
+  const { isDark } = useTheme();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
   const isPassword = secureTextEntry;
 
+  // Dark mode colors
+  const labelColor = isDark ? 'text-gray-300' : 'text-gray-700';
+  const inputBg = isDark ? 'bg-gray-800' : 'bg-white';
+  const inputBorder = isDark ? 'border-gray-600' : 'border-gray-200';
+  const inputText = isDark ? 'text-gray-100' : 'text-gray-900';
+  const disabledBg = isDark ? 'bg-gray-700' : 'bg-gray-100';
+  const iconColor = isDark ? '#9ca3af' : '#6b7280';
+  const placeholderColor = isDark ? '#6b7280' : '#9ca3af';
+
   return (
     <View className={cn('mb-4', className)}>
-      {label && <Text className="text-sm font-semibold text-gray-700 mb-2">{label}</Text>}
+      {label && <Text className={cn('text-sm font-semibold mb-2', labelColor)}>{label}</Text>}
 
       <View
         className={cn(
-          'flex-row items-center border-2 rounded-xl px-4 py-3 bg-white',
-          isFocused ? 'border-primary-500' : 'border-gray-200',
+          'flex-row items-center border-2 rounded-xl px-4 py-3',
+          inputBg,
+          isFocused ? 'border-primary-500' : inputBorder,
           error ? 'border-error' : '',
-          disabled ? 'bg-gray-100' : ''
+          disabled ? disabledBg : ''
         )}
       >
         {leftIcon && <View className="mr-3">{leftIcon}</View>}
@@ -67,8 +79,8 @@ export function Input({
           keyboardType={keyboardType}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          className={cn('flex-1 text-base text-gray-900', multiline ? 'min-h-[80px]' : '')}
-          placeholderTextColor="#9ca3af"
+          className={cn('flex-1 text-base', inputText, multiline ? 'min-h-[80px]' : '')}
+          placeholderTextColor={placeholderColor}
         />
 
         {isPassword && (
@@ -79,7 +91,7 @@ export function Input({
             <Ionicons
               name={isPasswordVisible ? 'eye-off' : 'eye'}
               size={20}
-              color="#6b7280"
+              color={iconColor}
             />
           </TouchableOpacity>
         )}
