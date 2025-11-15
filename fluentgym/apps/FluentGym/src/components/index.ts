@@ -7,6 +7,7 @@
 // 3D Avatar Components
 export { Avatar3DCanvas } from './Avatar3DCanvas';
 export { Avatar3DScene } from './Avatar3DScene';
+export { AvatarDisplay } from './AvatarDisplay';
 
 // UI Components
 export { Button } from './ui/Button';
