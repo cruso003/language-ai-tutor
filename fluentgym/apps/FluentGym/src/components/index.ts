@@ -23,6 +23,10 @@ export { ScenarioCard } from './ScenarioCard';
 export { ScenarioSelector } from './ScenarioSelector';
 export { ScenarioProgress } from './ScenarioProgress';
 
+// Corrections System
+export { CorrectionCard } from './CorrectionCard';
+export { CorrectionsPanel } from './CorrectionsPanel';
+
 // UI Components
 export { Button } from './ui/Button';
 export { Card } from './ui/Card';

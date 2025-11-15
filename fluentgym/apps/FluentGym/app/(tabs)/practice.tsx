@@ -22,9 +22,11 @@ import { TutorAvatar } from '../../src/components/TutorAvatar';
 import { FluencyGate } from '../../src/components/FluencyGate';
 import { FluencyMetrics } from '../../src/components/FluencyMetrics';
 import { ScenarioProgress } from '../../src/components/ScenarioProgress';
+import { CorrectionsPanel } from '../../src/components/CorrectionsPanel';
 import { getDefaultTutor, getTutorById, type Tutor } from '../../src/config/tutors';
 import { getScenarioById, type Scenario } from '../../src/config/scenarios';
 import { useFluencyTracking } from '../../src/hooks/useFluencyTracking';
+import { useCorrections } from '../../src/hooks/useCorrections';
 import { apiClient } from '../../src/api/client';
 
 interface Message {
@@ -50,6 +52,7 @@ export default function PracticeScreen() {
   const [isFluencyGateActive, setIsFluencyGateActive] = useState(false);
   const [showMetrics, setShowMetrics] = useState(false);
   const [showScenarioProgress, setShowScenarioProgress] = useState(true);
+  const [showCorrections, setShowCorrections] = useState(true);
   const [completedObjectives, setCompletedObjectives] = useState<string[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
   const responseStartTimeRef = useRef<number>();
@@ -61,6 +64,16 @@ export default function PracticeScreen() {
 
   // Fluency tracking
   const { recordResponse, getSessionMetrics } = useFluencyTracking();
+
+  // Corrections tracking
+  const {
+    corrections,
+    isAnalyzing,
+    requestCorrections,
+    acknowledgeCorrection,
+    dismissCorrection,
+    clearAllCorrections,
+  } = useCorrections();
 
   const bgColor = isDark ? 'bg-dark-bg' : 'bg-gray-50';
   const cardColor = isDark ? 'bg-dark-card' : 'bg-white';
@@ -132,6 +145,7 @@ export default function PracticeScreen() {
     }
 
     const userMessage = inputText.trim();
+    const userMessageId = Date.now().toString();
     setInputText('');
     addMessage('user', userMessage);
     setIsLoading(true);
@@ -140,6 +154,10 @@ export default function PracticeScreen() {
       // FIX: Include userId in the request
       const response = await apiClient.sendMessage(sessionId, userMessage, selectedTutor.personality);
       addMessage('assistant', response.response);
+
+      // Request AI corrections for this message
+      // This will analyze the user's Spanish and provide educational feedback
+      await requestCorrections(userMessageId, userMessage, response.response);
 
       // Optionally play audio response
       if (response.audioUrl) {
@@ -336,6 +354,19 @@ export default function PracticeScreen() {
           onTimeout={handleFluencyTimeout}
           onResponseStart={handleResponseStart}
         />
+
+        {/* Smart Corrections Panel */}
+        {corrections.length > 0 && (
+          <CorrectionsPanel
+            corrections={corrections}
+            onAcknowledge={acknowledgeCorrection}
+            onDismiss={dismissCorrection}
+            onClearAll={clearAllCorrections}
+            isDark={isDark}
+            isExpanded={showCorrections}
+            onToggleExpand={() => setShowCorrections(!showCorrections)}
+          />
+        )}
 
         {/* Messages */}
         <ScrollView
