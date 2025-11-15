@@ -12,13 +12,21 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Audio } from 'expo-av';
+import { useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { Button } from '../../src/components/ui/Button';
 import { Card } from '../../src/components/ui/Card';
 import { TutorSelector } from '../../src/components/TutorSelector';
 import { TutorAvatar } from '../../src/components/TutorAvatar';
+import { FluencyGate } from '../../src/components/FluencyGate';
+import { FluencyMetrics } from '../../src/components/FluencyMetrics';
+import { ScenarioProgress } from '../../src/components/ScenarioProgress';
+import { CorrectionsPanel } from '../../src/components/CorrectionsPanel';
 import { getDefaultTutor, getTutorById, type Tutor } from '../../src/config/tutors';
+import { getScenarioById, type Scenario } from '../../src/config/scenarios';
+import { useFluencyTracking } from '../../src/hooks/useFluencyTracking';
+import { useCorrections } from '../../src/hooks/useCorrections';
 import { apiClient } from '../../src/api/client';
 
 interface Message {
@@ -32,6 +40,8 @@ interface Message {
 export default function PracticeScreen() {
   const { user } = useAuth();
   const { isDark } = useTheme();
+  const params = useLocalSearchParams<{ scenarioId?: string }>();
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
@@ -39,7 +49,31 @@ export default function PracticeScreen() {
   const [selectedTutor, setSelectedTutor] = useState<Tutor>(getDefaultTutor());
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [sessionId, setSessionId] = useState<string>('');
+  const [isFluencyGateActive, setIsFluencyGateActive] = useState(false);
+  const [showMetrics, setShowMetrics] = useState(false);
+  const [showScenarioProgress, setShowScenarioProgress] = useState(true);
+  const [showCorrections, setShowCorrections] = useState(true);
+  const [completedObjectives, setCompletedObjectives] = useState<string[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
+  const responseStartTimeRef = useRef<number>();
+
+  // Load scenario if scenarioId param provided
+  const activeScenario: Scenario | undefined = params.scenarioId
+    ? getScenarioById(params.scenarioId)
+    : undefined;
+
+  // Fluency tracking
+  const { recordResponse, getSessionMetrics } = useFluencyTracking();
+
+  // Corrections tracking
+  const {
+    corrections,
+    isAnalyzing,
+    requestCorrections,
+    acknowledgeCorrection,
+    dismissCorrection,
+    clearAllCorrections,
+  } = useCorrections();
 
   const bgColor = isDark ? 'bg-dark-bg' : 'bg-gray-50';
   const cardColor = isDark ? 'bg-dark-card' : 'bg-white';
@@ -57,9 +91,23 @@ export default function PracticeScreen() {
       const session = await apiClient.createSession('default-skill-pack');
       setSessionId(session.id);
 
-      // Get initial greeting
-      const response = await apiClient.startSession('default-skill-pack', undefined, selectedTutor.personality);
-      addMessage('assistant', response.greeting);
+      // Get initial greeting (use scenario greeting if available)
+      const greeting = activeScenario
+        ? activeScenario.initialGreeting
+        : undefined;
+
+      if (greeting) {
+        // Use scenario's initial greeting directly
+        addMessage('assistant', greeting);
+      } else {
+        // Get AI-generated greeting
+        const response = await apiClient.startSession(
+          'default-skill-pack',
+          undefined,
+          selectedTutor.personality
+        );
+        addMessage('assistant', response.greeting);
+      }
     } catch (error) {
       console.error('Failed to initialize session:', error);
       Alert.alert('Error', 'Failed to start practice session. Please try again.');
@@ -74,12 +122,30 @@ export default function PracticeScreen() {
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, newMessage]);
+
+    // Activate Fluency Gate after assistant message
+    if (role === 'assistant') {
+      responseStartTimeRef.current = Date.now();
+      setIsFluencyGateActive(true);
+    }
   };
 
   const handleSendMessage = async () => {
     if (!inputText.trim() || !sessionId) return;
 
+    // Stop Fluency Gate and record response time
+    setIsFluencyGateActive(false);
+    const responseTime = responseStartTimeRef.current
+      ? (Date.now() - responseStartTimeRef.current) / 1000
+      : 0;
+
+    if (responseTime > 0) {
+      const metrics = recordResponse(responseTime);
+      console.log(`Response time: ${responseTime.toFixed(2)}s - ${metrics.rating}`);
+    }
+
     const userMessage = inputText.trim();
+    const userMessageId = Date.now().toString();
     setInputText('');
     addMessage('user', userMessage);
     setIsLoading(true);
@@ -88,6 +154,10 @@ export default function PracticeScreen() {
       // FIX: Include userId in the request
       const response = await apiClient.sendMessage(sessionId, userMessage, selectedTutor.personality);
       addMessage('assistant', response.response);
+
+      // Request AI corrections for this message
+      // This will analyze the user's Spanish and provide educational feedback
+      await requestCorrections(userMessageId, userMessage, response.response);
 
       // Optionally play audio response
       if (response.audioUrl) {
@@ -170,6 +240,50 @@ export default function PracticeScreen() {
     }
   };
 
+  // Fluency Gate handlers
+  const handleFluencyTimeout = () => {
+    console.log('⚠️ Response timeout! Too slow.');
+    setIsFluencyGateActive(false);
+
+    // Record timeout as slow response (4 seconds)
+    if (responseStartTimeRef.current) {
+      const responseTime = (Date.now() - responseStartTimeRef.current) / 1000;
+      recordResponse(responseTime);
+    }
+
+    Alert.alert(
+      'Too Slow!',
+      'Try to respond faster next time. Thinking in your target language gets easier with practice!',
+      [{ text: 'Got it', style: 'default' }]
+    );
+  };
+
+  const handleResponseStart = (elapsedTime: number) => {
+    console.log(`User started responding after ${elapsedTime.toFixed(2)}s`);
+  };
+
+  const handleInputFocus = () => {
+    // Stop timer when user starts typing
+    if (isFluencyGateActive && responseStartTimeRef.current) {
+      const responseTime = (Date.now() - responseStartTimeRef.current) / 1000;
+      recordResponse(responseTime);
+      setIsFluencyGateActive(false);
+    }
+  };
+
+  // Scenario handlers
+  const handleToggleObjective = (objectiveId: string) => {
+    setCompletedObjectives((prev) => {
+      if (prev.includes(objectiveId)) {
+        // Remove if already completed
+        return prev.filter((id) => id !== objectiveId);
+      } else {
+        // Add to completed
+        return [...prev, objectiveId];
+      }
+    });
+  };
+
   return (
     <SafeAreaView className={`flex-1 ${bgColor}`} edges={['top']}>
       <KeyboardAvoidingView
@@ -186,7 +300,73 @@ export default function PracticeScreen() {
             onSelectTutor={setSelectedTutor}
             isDark={isDark}
           />
+
+          {/* Fluency Metrics Toggle */}
+          {getSessionMetrics().totalResponses > 0 && (
+            <TouchableOpacity
+              onPress={() => setShowMetrics(!showMetrics)}
+              className="mt-3 flex-row items-center justify-between"
+            >
+              <View className="flex-row items-center gap-2">
+                <Ionicons name="stats-chart" size={16} color={isDark ? '#9ca3af' : '#6b7280'} />
+                <Text className={`text-sm font-medium ${textSecondary}`}>
+                  Session Metrics
+                </Text>
+              </View>
+              <Ionicons
+                name={showMetrics ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color={isDark ? '#9ca3af' : '#6b7280'}
+              />
+            </TouchableOpacity>
+          )}
         </View>
+
+        {/* Fluency Metrics Display */}
+        {showMetrics && getSessionMetrics().totalResponses > 0 && (
+          <View className="px-6 py-4">
+            <FluencyMetrics
+              metrics={getSessionMetrics()}
+              isDark={isDark}
+              compact={false}
+            />
+          </View>
+        )}
+
+        {/* Scenario Progress */}
+        {activeScenario && (
+          <View className="px-6 py-4">
+            <ScenarioProgress
+              scenario={activeScenario}
+              completedObjectives={completedObjectives}
+              onToggleObjective={handleToggleObjective}
+              isDark={isDark}
+              isExpanded={showScenarioProgress}
+              onToggleExpand={() => setShowScenarioProgress(!showScenarioProgress)}
+            />
+          </View>
+        )}
+
+        {/* Fluency Gate Timer */}
+        <FluencyGate
+          isActive={isFluencyGateActive}
+          maxTime={3}
+          onTimeout={handleFluencyTimeout}
+          onResponseStart={handleResponseStart}
+        />
+
+        {/* Smart Corrections Panel */}
+        {corrections.length > 0 && (
+          <CorrectionsPanel
+            corrections={corrections}
+            onAcknowledge={acknowledgeCorrection}
+            onDismiss={dismissCorrection}
+            onClearAll={clearAllCorrections}
+            isDark={isDark}
+            isExpanded={showCorrections}
+            onToggleExpand={() => setShowCorrections(!showCorrections)}
+          />
+        )}
 
         {/* Messages */}
         <ScrollView
@@ -284,6 +464,7 @@ export default function PracticeScreen() {
               <TextInput
                 value={inputText}
                 onChangeText={setInputText}
+                onFocus={handleInputFocus}
                 placeholder="Type a message..."
                 placeholderTextColor={isDark ? '#6b7280' : '#9ca3af'}
                 className={`flex-1 text-base ${textColor}`}
